@@ -197,14 +197,27 @@ export default function App() {
       const path = query.replace('truth://', '').replace('trusking://', '');
       const dataPath = path || 'global_truth_feed';
       
-      // Khởi tạo Dữ liệu gốc
-      setP2pData({
-        path: dataPath,
-        content: "🔥🚨 BREAKING: Có thông tin về hỏa hoạn tại Vincom. Một số cột khói đen bốc lên từ phía mái tòa nhà. Cập nhật: PCCC đã có mặt."
-      });
+      // Lắng nghe và kéo dữ liệu Sự thật trực tiếp từ Mạng Lưới P2P (Gun.js) thay vì Mock tĩnh
+      gun.get('truth_layer').get(dataPath).once((data) => {
+        if (data && data.content) {
+          // Bắt được tín hiệu từ AI Agent
+          setP2pData({
+            path: dataPath,
+            content: data.content,
+            timestamp: data.timestamp || Date.now()
+          });
 
-      // Kích hoạt BTVE Engine chạy Local (Personal Machine/LAN)
-      runLocalBTVE(dataPath);
+          // Kích hoạt BTVE Engine (Truth Meter) chạy Local trên Máy cá nhân để phân tích Bằng chứng cho Claim này
+          runLocalBTVE(dataPath);
+        } else {
+          // Fallback nếu Mạng chưa đồng bộ kịp hoặc Claim chưa tồn tại
+          setP2pData({
+            path: dataPath,
+            content: "Lỗi 404: Không tìm thấy Dữ liệu Sự thật trên Mạng lưới P2P DePIN. Vui lòng đợi các Bodhi Node đồng bộ."
+          });
+          setIsLoading(false);
+        }
+      });
 
       return;
     }
