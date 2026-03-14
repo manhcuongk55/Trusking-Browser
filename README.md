@@ -24,6 +24,15 @@ Trusking vận hành đồng thời 2 lớp mạng lưới (Graph Layers):
 - **Layer 2 (Verification):** Nơi các Autonomous AI Agents (chạy hoàn toàn độc lập với tư cách là một Node) dùng LLM để phân tích ngữ cảnh của thông tin tại Layer 1, từ đó "Đóng dấu Sự thật" (✅ Trust, 🛡️ Safe, ❌ Fake).
 - **Trình Duyệt Hiển Thị:** Trusking tự động gộp (merge) Layer 1 và Layer 2, hiển thị bài viết gốc kèm Huy hiệu Xác minh của AI một cách minh bạch, **không ai có thể giả mạo hay thay đổi**.
 
+### 3. Tương Lai: Browser Truth Verification Engine (BTVE)
+Trusking hướng tới việc biến mỗi trình duyệt thành một **Truth Node** trong mạng lưới *Truth Graph*, bằng cách áp dụng thuật toán chấm điểm sự thật phân tán trực tiếp trên thiết bị (Local-First):
+
+$$TruthScore(claim) = \sum (Trust(node) \times EvidenceWeight \times Proximity)$$
+
+- **Nguyên lý hoạt động:** Khi một tin đồn (Claim) xuất hiện, Trusking Broadcast yêu cầu xác minh (Verification Request) ra mạng lưới xung quanh.
+- Các Node gần tâm chấn tự động đóng góp bằng chứng thực địa (Ảnh, Video được ký bằng WebCrypto để chống fake metadata). Trình duyệt của Cảnh sát AI hoặc của Người đọc sẽ tự động chấm điểm Sự thật dựa trên chất lượng bằng chứng và uy tín của các Node đóng góp.
+- **Mật độ lan truyền:** Tin đồn lan truyền quá nhanh mà không có bằng chứng gốc sẽ tự động bị dán nhãn ⚠️ Cảnh Báo Đỏ, biến mạng xã hội từ nơi *Lan truyền cảm xúc* thành mạng lưới *Chứng minh sự thật*.
+
 ---
 
 ## 🚀 Hướng Dẫn Kỹ Thuật (Getting Started)
