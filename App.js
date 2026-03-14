@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Gun from 'gun';
+import * as Crypto from 'expo-crypto'; // Module Crypto để mã hóa Identity
 
 // 1. Khởi tạo Relay Nội Bộ (Trusking Node)
 import 'gun/lib/radix';
@@ -30,10 +31,26 @@ export default function App() {
   // Trust Economy State (Bodhi Wallet)
   const [bodhiPoints, setBodhiPoints] = useState(50); // Điểm khởi tạo
   const [minedReward, setMinedReward] = useState(null); // Trạng thái show thông báo đào thành công
+  
+  // Privacy Protection State (Pillar 4)
+  const [anonymousId, setAnonymousId] = useState('Generating ID...');
 
   const webViewRef = useRef(null);
 
   useEffect(() => {
+    // Khởi tạo Identity Ẩn danh (Privacy Layer)
+    const generateIdentity = async () => {
+      // Giả lập Public Key
+      const rawPublicKey = `pub_key_${Math.random()}`;
+      // Sinh Mã băm (Hash) làm định danh, che giấu danh tính thật
+      const hashedId = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+         rawPublicKey
+      );
+      setAnonymousId(`0x${hashedId.substring(0, 8).toUpperCase()}`);
+    };
+    generateIdentity();
+
     // Initial load
     handleGo();
   }, []);
@@ -46,9 +63,9 @@ export default function App() {
     if (truthScore && truthScore.evidenceGraph) {
        evidenceRows = truthScore.evidenceGraph.map(ev => `
          <tr style="${ev.has_conflict ? 'background-color: #ffebee;' : ''}">
-           <td><code>${ev.id}</code></td>
-           <td>${ev.type.toUpperCase()}</td>
-           <td>${ev.proximity_meters}m</td>
+           <td><code style="color:#8E24AA">${ev.id}</code></td>
+           <td>${ev.type.toUpperCase()}<br/><span style="font-size:8px; color:#999">🔒 Encrypted</span></td>
+           <td>${ev.hashed_region}</td>
            <td>${(ev.node_trust * 100).toFixed(0)}%</td>
            <td style="color: ${ev.has_conflict ? '#D32F2F' : '#388E3C'}; font-weight:bold;">
               ${ev.has_conflict ? '-' + Math.abs(ev.calculated_score).toFixed(1) : '+' + ev.calculated_score.toFixed(1)}
@@ -86,9 +103,9 @@ export default function App() {
 
           ${truthScore ? `
           <div class="evidence-graph">
-             <div class="evidence-header">🔍 EVIDENCE GRAPH BREAKDOWN</div>
+             <div class="evidence-header">🔍 EVIDENCE GRAPH BREAKDOWN (Privacy Preserved)</div>
              <table>
-               <tr><th>Node ID</th><th>Type</th><th>Prox.</th><th>Trust</th><th>Score Effect</th></tr>
+               <tr><th>Anon Node ID</th><th>Evidence</th><th>Hashed Region</th><th>Trust</th><th>Score Effect</th></tr>
                ${evidenceRows}
              </table>
              <div class="formula-box">
@@ -113,12 +130,12 @@ export default function App() {
     
     setTimeout(() => {
       // Dữ liệu giả lập biểu diễn một "Evidence Graph" (Đồ thị Bằng chứng)
-      // Mỗi Node đóng góp bằng chứng từ mạng riêng (Zero-cost LAN / DePIN local nodes)
+      // Privacy Pillar 4: Không gửi ID thường hay tọa độ GPS chính xác. Mọi thứ bị băm (Hashed)
       const evidenceGraph = [
-        { id: 'node_a (local)', type: 'video', node_trust: 0.95, proximity_meters: 10,  has_conflict: false }, 
-        { id: 'node_b (lan)',   type: 'photo', node_trust: 0.80, proximity_meters: 150, has_conflict: false },
-        { id: 'node_c (mesh)',  type: 'text',  node_trust: 0.50, proximity_meters: 50,  has_conflict: false },
-        { id: 'node_d (wan)',   type: 'video', node_trust: 0.10, proximity_meters: 2000, has_conflict: true  }, // Fake/Conflict Node
+        { id: '0x8F9A...', type: 'video', node_trust: 0.95, proximity_meters: 10, hashed_region: 'Zone_A89 (5km²)', has_conflict: false }, 
+        { id: '0x3C1B...', type: 'photo', node_trust: 0.80, proximity_meters: 150, hashed_region: 'Zone_A89 (5km²)', has_conflict: false },
+        { id: '0x99D2...', type: 'text',  node_trust: 0.50, proximity_meters: 50, hashed_region: 'Zone_A89 (5km²)', has_conflict: false },
+        { id: '0xFF11...', type: 'video', node_trust: 0.10, proximity_meters: 2000, hashed_region: 'Zone_X99 (Far)', has_conflict: true  }, // Fake/Conflict Node
       ];
 
       /* THUẬT TOÁN LÕI (TRUTH ENGINE)
@@ -252,8 +269,8 @@ export default function App() {
       {/* V-ID Trust Economy Wallet Bar */}
       <View style={styles.walletBar}>
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
-          <Ionicons name="person-circle" size={18} color="#D81B60" />
-          <Text style={styles.walletNodeId}> Trusking_Node_7A9X</Text>
+          <Ionicons name="shield-checkmark" size={16} color="#4A148C" style={{marginRight: 4}} />
+          <Text style={styles.walletNodeId}> ANON_ID: {anonymousId}</Text>
         </View>
         <View style={styles.walletPoints}>
           <Text style={styles.pointsText}>{bodhiPoints} Bodhi Pts</Text>
