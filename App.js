@@ -20,6 +20,7 @@ export default function App() {
   const [urlInput, setUrlInput] = useState('truth://makai/news/fire-vincom');
   const [currentUrl, setCurrentUrl] = useState('');
   const [p2pContent, setP2pContent] = useState(null); 
+  const [p2pData, setP2pData] = useState(null); // Lưu trữ metadata để WebView render
   const [isLoading, setIsLoading] = useState(false);
   
   // BTVE Truth Meter State
@@ -33,46 +34,152 @@ export default function App() {
     handleGo();
   }, []);
 
-  // Hàm mô phỏng BTVE chạy Local trong Browser (WebRTC/WebCrypto Mock)
+  // Effect: Render lại WebView HTML ngay khi Truth Graph (truthScore) được tính toán xong
+  useEffect(() => {
+    if (!p2pData) return;
+
+    let evidenceRows = '';
+    if (truthScore && truthScore.evidenceGraph) {
+       evidenceRows = truthScore.evidenceGraph.map(ev => `
+         <tr style="${ev.has_conflict ? 'background-color: #ffebee;' : ''}">
+           <td><code>${ev.id}</code></td>
+           <td>${ev.type.toUpperCase()}</td>
+           <td>${ev.proximity_meters}m</td>
+           <td>${(ev.node_trust * 100).toFixed(0)}%</td>
+           <td style="color: ${ev.has_conflict ? '#D32F2F' : '#388E3C'}; font-weight:bold;">
+              ${ev.has_conflict ? '-' + Math.abs(ev.calculated_score).toFixed(1) : '+' + ev.calculated_score.toFixed(1)}
+           </td>
+         </tr>
+       `).join('');
+    }
+
+    const html = `
+      <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { font-family: -apple-system, sans-serif; padding: 20px; background: #fdfbf7; color: #4E342E; margin:0;}
+            h1 { color: #8E24AA; font-size: 20px; border-bottom: 2px solid #8E24AA; padding-bottom: 10px;}
+            .node { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 4px 12px rgba(161,136,127,0.1); margin-top:20px; border: 1px solid #f0e6e6;}
+            .evidence-graph { margin-top: 25px; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0; background: #fff; }
+            .evidence-header { background: #5D4037; color: #fff; padding: 10px 15px; font-weight: bold; font-size: 14px; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
+            th { background-color: #f5f5f5; color: #666; font-weight: 600; }
+            .formula-box { background: #f3e5f5; border-left: 4px solid #8E24AA; padding: 10px; margin-top: 15px; font-size: 12px; color: #4A148C; font-family: monospace; }
+          </style>
+        </head>
+        <body>
+          <h1>🌐 Trusking / ${p2pData.path.split('/').pop()}</h1>
+          
+          <div class="node">
+            <p style="color: #666; font-size: 12px; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">Decentralized Content (Layer 1)</p>
+            <div style="font-size: 16px; line-height: 1.5; color: #212121;">
+              ${p2pData.content}
+            </div>
+            <div style="font-size: 11px; color: #999; margin-top: 15px;">Cryptographic Hash: QmXyz_0987_aBc</div>
+          </div>
+
+          ${truthScore ? `
+          <div class="evidence-graph">
+             <div class="evidence-header">🔍 EVIDENCE GRAPH BREAKDOWN</div>
+             <table>
+               <tr><th>Node ID</th><th>Type</th><th>Prox.</th><th>Trust</th><th>Score Effect</th></tr>
+               ${evidenceRows}
+             </table>
+             <div class="formula-box">
+                Σ (Base + Weight×Prox + NodeTrust + Witness) - Conflict<br>
+                Total Accumulated Score: ${truthScore.percentage}/100
+             </div>
+          </div>
+          ` : '<div style="margin-top:20px; text-align:center; color:#888; font-size:12px;">Waiting for DePIN Truth Engine calculation...</div>'}
+          
+          <div style="margin-top: 30px; text-align: center; color: #aaa; font-size: 11px;">Powered by 0-cost Local DePIN (Decentralized Physical Infrastructure Networks)</div>
+        </body>
+      </html>
+    `;
+    setP2pContent(html);
+    setIsLoading(false);
+  }, [p2pData, truthScore]);
+
+  // Hàm mô phỏng BTVE chạy Local trong Browser (Hỗ trợ Truth Graph 5-layer)
   const runLocalBTVE = async (path) => {
     setIsVerifying(true);
     setTruthScore(null);
     
-    // Giả lập trễ mạng P2P thu thập bằng chứng từ các Node lân cận (WebRTC mesh)
     setTimeout(() => {
-      // Bằng chứng giả lập trả về từ DHT P2P Mạng lưới
-      const evidenceData = [
-        { type: 'video', nodeTrust: 0.9, proximityMeters: 50, validSignature: true },
-        { type: 'photo', nodeTrust: 0.6, proximityMeters: 200, validSignature: true },
-        { type: 'text', nodeTrust: 0.2, proximityMeters: 1500, validSignature: false }, // Fake/Tampered
+      // Dữ liệu giả lập biểu diễn một "Evidence Graph" (Đồ thị Bằng chứng)
+      // Mỗi Node đóng góp bằng chứng từ mạng riêng (Zero-cost LAN / DePIN local nodes)
+      const evidenceGraph = [
+        { id: 'node_a (local)', type: 'video', node_trust: 0.95, proximity_meters: 10,  has_conflict: false }, 
+        { id: 'node_b (lan)',   type: 'photo', node_trust: 0.80, proximity_meters: 150, has_conflict: false },
+        { id: 'node_c (mesh)',  type: 'text',  node_trust: 0.50, proximity_meters: 50,  has_conflict: false },
+        { id: 'node_d (wan)',   type: 'video', node_trust: 0.10, proximity_meters: 2000, has_conflict: true  }, // Fake/Conflict Node
       ];
 
-      let score = 0;
-      let validNodes = 0;
+      /* THUẬT TOÁN LÕI (TRUTH ENGINE)
+         TruthScore = SourceTrust + EvidenceWeight + WitnessCount + Proximity - ConflictPenalty
+      */
+      let totalScore = 0;
+      let validWitnesses = 0;
+      let totalConflicts = 0;
 
-      // Công thức lõi BTVE: TruthScore = Σ (Trust × EvidenceWeight × Proximity)
-      evidenceData.forEach(ev => {
-        // Nếu WebCrypto chữ ký số Fail -> Loại bỏ ngay lập tức (Chống Fake/Deepfake)
-        if (!ev.validSignature) return; 
+      // Tính điểm cơ sở (Giả định nguồn phát ban đầu có uy tín trung bình)
+      const baseSourceTrust = 20; 
+      totalScore += baseSourceTrust;
 
-        validNodes++;
-        const weight = ev.type === 'video' ? 10 : (ev.type === 'photo' ? 5 : 1);
-        const proxScore = ev.proximityMeters < 100 ? 1.5 : (ev.proximityMeters < 500 ? 1.0 : 0.5);
-        
-        score += (ev.nodeTrust * weight * proxScore);
+      const evidenceDetails = evidenceGraph.map(ev => {
+        // 1. Nếu hệ thống mạng P2P phát hiện mâu thuẫn (Conflict/Deepfake)
+        if (ev.has_conflict) {
+          totalConflicts++;
+          const penalty = 15; // Phạt nặng
+          totalScore -= penalty;
+          return { ...ev, calculated_score: -penalty, status: 'REJECTED (Conflict)' };
+        }
+
+        // Nếu hợp lệ, bắt đầu cộng dồn
+        validWitnesses++;
+
+        // 2. Evidence Weight
+        let evWeight = 0;
+        if (ev.type === 'video') evWeight = 15;
+        else if (ev.type === 'photo') evWeight = 10;
+        else if (ev.type === 'text') evWeight = 2; // Lời nói suông ít giá trị
+
+        // 3. Proximity (Khoảng cách) - Càng gần hiện trường điểm càng cao
+        let proxMultiplier = 1.0;
+        if (ev.proximity_meters <= 50) proxMultiplier = 1.5;
+        else if (ev.proximity_meters <= 500) proxMultiplier = 1.0;
+        else proxMultiplier = 0.5;
+
+        // 4. Node Trust (Uy tín của Node đóng góp)
+        const nodeScore = ev.node_trust * 10;
+
+        // Tính tổng điểm cho Node này
+        const contribution = (evWeight * proxMultiplier) + nodeScore;
+        totalScore += contribution;
+
+        return { ...ev, calculated_score: contribution, status: 'ACCEPTED' };
       });
 
-      // Scale điểm về 100% để hiển thị (Giả định max score là ~20 cho 1 cụm sự kiện nhỏ)
-      const finalPercentage = Math.min(Math.round((score / 20) * 100), 100);
+      // 5. Thưởng Witness Count (Nhiều nhân chứng độc lập xác nhận -> Điểm rốn)
+      if (validWitnesses >= 3) {
+        totalScore += (validWitnesses * 2); 
+      }
+
+      // Giới hạn max 100%
+      const finalPercentage = Math.max(0, Math.min(Math.round(totalScore), 100));
       
       setTruthScore({
         percentage: finalPercentage,
-        peersAssisted: validNodes,
-        status: finalPercentage > 70 ? 'VERIFIED' : (finalPercentage > 40 ? 'SUSPICIOUS' : 'UNVERIFIED')
+        peersAssisted: validWitnesses,
+        conflictsCaught: totalConflicts,
+        status: finalPercentage > 75 ? 'VERIFIED' : (finalPercentage > 40 ? 'SUSPICIOUS' : 'UNVERIFIED'),
+        evidenceGraph: evidenceDetails // Lưu lại đồ thị để render ra WebView
       });
       setIsVerifying(false);
 
-    }, 2500); // 2.5 giây chạy thuật toán
+    }, 2800); // 2.8 giây chạy thuật toán phân tích
   };
 
   const handleGo = () => {
@@ -82,71 +189,22 @@ export default function App() {
 
     setIsLoading(true);
     setP2pContent(null);
+    setP2pData(null);
     setTruthScore(null);
 
-    // Bắt giao thức Mạng Sự Thật (P2P BTVE)
+    // Bắt giao thức Mạng Sự Thật (P2P BTVE) - Zero Infrastructure Cost
     if (query.startsWith('truth://') || query.startsWith('trusking://')) {
       const path = query.replace('truth://', '').replace('trusking://', '');
       const dataPath = path || 'global_truth_feed';
       
-      // Kích hoạt BTVE Engine chạy Local
+      // Khởi tạo Dữ liệu gốc
+      setP2pData({
+        path: dataPath,
+        content: "🔥🚨 BREAKING: Có thông tin về hỏa hoạn tại Vincom. Một số cột khói đen bốc lên từ phía mái tòa nhà. Cập nhật: PCCC đã có mặt."
+      });
+
+      // Kích hoạt BTVE Engine chạy Local (Personal Machine/LAN)
       runLocalBTVE(dataPath);
-
-      // Render nội dung (Layer 1) và AI Police (Layer 2)
-      let aggregatedData = null;
-      let aiVerification = null;
-
-      const renderView = (data, verification) => {
-        const html = `
-          <html>
-            <head>
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <style>
-                body { font-family: -apple-system, sans-serif; padding: 20px; background: #f8f9fa; color: #333; }
-                h1 { color: #563ACC; font-size: 20px; border-bottom: 2px solid #563ACC; padding-bottom: 10px;}
-                .node { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-top:20px; border: 1px solid #eaeaea;}
-                pre { background: #f4f4f4; padding: 10px; overflow-x: auto; border-radius: 4px; font-size: 13px; color: #444; }
-                .ai-badge { background-color: #E8F5E9; border: 1px solid #4CAF50; padding: 12px; border-radius: 8px; margin-top: 15px; display: flex; align-items: flex-start; }
-                .ai-icon { font-size: 20px; margin-right: 10px; }
-              </style>
-            </head>
-            <body>
-              <h1>🌐 Trusking / ${dataPath.split('/').pop()}</h1>
-              
-              <div class="node">
-                <p style="color: #666; font-size: 12px; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">Decentralized Content (Layer 1)</p>
-                <div style="font-size: 16px; line-height: 1.5;">
-                  ${data?.content || JSON.stringify(data)}
-                </div>
-                <div style="font-size: 11px; color: #999; margin-top: 15px;">Cryptographic Hash: QmXyZ...aBc</div>
-              </div>
-
-               ${verification ? `
-              <div class="ai-badge">
-                <span class="ai-icon">🛡️</span>
-                <div>
-                  <strong style="color: #2E7D32;">AI Layer 2: ${verification.status}</strong>
-                  <div style="font-size: 12px; color: #666; margin-top: 2px;">${verification.rationale}</div>
-                </div>
-              </div>
-              ` : ''}
-              
-              <div style="margin-top: 30px; text-align: center; color: #aaa; font-size: 11px;">Powered by BTVE P2P Protocol</div>
-            </body>
-          </html>
-        `;
-        setP2pContent(html);
-        setCurrentUrl('');
-        setIsLoading(false);
-      };
-
-      // Mock fetching logic cho P2P
-      setTimeout(() => {
-         renderView(
-           { content: "🔥🚨 BREAKING: Có báo cáo cháy lớn tại khu vực Vincom. Đám mây khói đen bốc lên từ tầng 4. Các đơn vị PCCC đang tiếp cận hiện trường." },
-           { status: 'Trust', rationale: '[System] LLM phân tích văn bản khớp với mô hình khẩn cấp. Không chứa mã độc.'}
-         );
-      }, 500);
 
       return;
     }
