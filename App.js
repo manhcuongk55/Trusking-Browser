@@ -186,15 +186,15 @@ export default function App() {
       {(isVerifying || truthScore) && p2pContent && (
         <View style={styles.truthMeterContainer}>
           <View style={styles.truthMeterHeader}>
-            <Ionicons name="analytics" size={18} color="#fff" style={{marginRight: 6}} />
-            <Text style={styles.truthMeterTitle}>Browser Truth Verification Engine</Text>
+            <Ionicons name="flower-outline" size={18} color="#fff" style={{marginRight: 6}} />
+            <Text style={styles.truthMeterTitle}>Budai Awakening Verification</Text>
           </View>
           
           <View style={styles.truthMeterBody}>
             {isVerifying ? (
               <View style={styles.verifyingState}>
-                <ActivityIndicator color="#563ACC" size="small" />
-                <Text style={styles.verifyingText}>Broadcasting WebRTC Request to nearby nodes...</Text>
+                <ActivityIndicator color="#8E24AA" size="small" />
+                <Text style={styles.verifyingText}>Awakening Bodhi Nodes nearby...</Text>
               </View>
             ) : (
               <View style={styles.scoreState}>
@@ -202,18 +202,20 @@ export default function App() {
                   <Text style={[styles.scoreNumber, {color: truthScore.percentage > 70 ? '#4CAF50' : '#FF9800'}]}>
                     {truthScore.percentage}%
                   </Text>
-                  <Text style={styles.scoreLabel}>TRUTH SCORE</Text>
+                  <Text style={styles.scoreLabel}>AWAKENING</Text>
                 </View>
                 <View style={styles.scoreDetails}>
-                  <Text style={styles.scoreStatus}>{truthScore.status}</Text>
-                  <Text style={styles.scoreSubtext}>
-                    <Ionicons name="people" size={12} /> Verified by {truthScore.peersAssisted} local peers
+                  <Text style={[styles.scoreStatus, {color: truthScore.percentage > 70 ? '#2E7D32' : '#E65100'}]}>
+                    {truthScore.percentage > 70 ? 'TRUTH AWAKENED' : 'CLOUDS OF DOUBT'}
                   </Text>
                   <Text style={styles.scoreSubtext}>
-                    <Ionicons name="lock-closed" size={12} /> WebCrypto Signatures Valid
+                    <Ionicons name="people" size={12} color="#8E24AA" /> Verified by {truthScore.peersAssisted} Bodhi Nodes
                   </Text>
                   <Text style={styles.scoreSubtext}>
-                    <Ionicons name="location" size={12} /> High Proximity Evidence
+                    <Ionicons name="lock-closed" size={12} color="#8E24AA" /> WebCrypto Dharma Seals Valid
+                  </Text>
+                  <Text style={styles.scoreSubtext}>
+                    <Ionicons name="location" size={12} color="#8E24AA" /> Proximate Reality Grounded
                   </Text>
                 </View>
               </View>
@@ -243,39 +245,39 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fcfcfc' },
+  container: { flex: 1, backgroundColor: '#fdfbf7' }, // Màu nền ấm tựa giấy cũ
   header: {
     flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 10, paddingTop: 45, 
-    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#eee',
-    alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.05, shadowOffset: { width: 0, height: 2 }, shadowRadius: 4, elevation: 3,
+    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f0e6e6',
+    alignItems: 'center', shadowColor: '#A1887F', shadowOpacity: 0.1, shadowOffset: { width: 0, height: 2 }, shadowRadius: 4, elevation: 3,
   },
   urlInput: {
-    flex: 1, height: 44, backgroundColor: '#f6f6f6', borderRadius: 12, paddingHorizontal: 15, fontSize: 16, color: '#333', borderWidth: 1, borderColor: '#eaeaea',
+    flex: 1, height: 44, backgroundColor: '#fcfaf8', borderRadius: 12, paddingHorizontal: 15, fontSize: 16, color: '#4E342E', borderWidth: 1, borderColor: '#e8dfdf',
   },
   goButton: { marginLeft: 12, justifyContent: 'center', alignItems: 'center', width: 32, height: 32 },
   webview: { flex: 1 },
   
-  // Truth Meter Styles
+  // Truth Meter Styles (Budai Theme)
   truthMeterContainer: {
     margin: 12, backgroundColor: '#fff', borderRadius: 12,
-    shadowColor: '#563ACC', shadowOpacity: 0.15, shadowOffset: { width: 0, height: 4 }, shadowRadius: 10, elevation: 5,
-    borderWidth: 1, borderColor: '#563ACC30', overflow: 'hidden'
+    shadowColor: '#8E24AA', shadowOpacity: 0.15, shadowOffset: { width: 0, height: 4 }, shadowRadius: 10, elevation: 5,
+    borderWidth: 1, borderColor: '#8E24AA30', overflow: 'hidden'
   },
   truthMeterHeader: {
-    backgroundColor: '#563ACC', paddingVertical: 8, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center'
+    backgroundColor: '#8E24AA', paddingVertical: 8, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center' // Deep Lotus Purple
   },
-  truthMeterTitle: { color: '#fff', fontSize: 12, fontWeight: 'bold', letterSpacing: 0.5 },
+  truthMeterTitle: { color: '#fff', fontSize: 13, fontWeight: '700', letterSpacing: 0.5 },
   truthMeterBody: { padding: 15 },
   verifyingState: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10 },
   verifyingText: { marginLeft: 10, color: '#666', fontSize: 13, fontStyle: 'italic' },
   scoreState: { flexDirection: 'row', alignItems: 'center' },
   scoreCircle: { 
-    width: 80, height: 80, borderRadius: 40, borderWidth: 4, borderColor: '#f0f0f0', 
-    justifyContent: 'center', alignItems: 'center', borderTopColor: '#4CAF50', borderRightColor: '#4CAF50'
+    width: 80, height: 80, borderRadius: 40, borderWidth: 4, borderColor: '#f3e5f5', 
+    justifyContent: 'center', alignItems: 'center', borderTopColor: '#D81B60', borderRightColor: '#D81B60' // Lotus Pink Highlight
   },
-  scoreNumber: { fontSize: 24, fontWeight: '900' },
-  scoreLabel: { fontSize: 8, fontWeight: 'bold', color: '#888', marginTop: 2 },
+  scoreNumber: { fontSize: 24, fontWeight: '900', color: '#4E342E' },
+  scoreLabel: { fontSize: 8, fontWeight: 'bold', color: '#8E24AA', marginTop: 2 },
   scoreDetails: { marginLeft: 20, flex: 1 },
-  scoreStatus: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 4 },
-  scoreSubtext: { fontSize: 12, color: '#666', marginBottom: 2 },
+  scoreStatus: { fontSize: 17, fontWeight: 'bold', marginBottom: 4 },
+  scoreSubtext: { fontSize: 12, color: '#5D4037', marginBottom: 3 },
 });
