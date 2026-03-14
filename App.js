@@ -30,6 +30,10 @@ export default function App() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [evidenceList, setEvidenceList] = useState([]); // Chứa bằng chứng real-time từ mạn lưới P2P
 
+  // Brand Domain Safety State (Phase 10)
+  const [currentDomain, setCurrentDomain] = useState(null);
+  const [brandSafetyScore, setBrandSafetyScore] = useState(0);
+
   // Trust Economy State (Bodhi Wallet)
   const [bodhiPoints, setBodhiPoints] = useState(50); // Điểm khởi tạo
   const [minedReward, setMinedReward] = useState(null); // Trạng thái show thông báo đào thành công
@@ -241,20 +245,18 @@ export default function App() {
     });
   };
 
-  // Vòng lặp Viral (Pillar 5): Kêu gọi đồng minh (Bodhi Nodes) xung quanh
-  const callForBackup = async () => {
-    if (!p2pData || !p2pData.path) return;
-    try {
-      const nodesNeeded = Math.max(0, 3 - (truthScore?.peersAssisted || 0));
-      const message = `🚨 [Trusking Mạng Sự Thật]\n\nTôi đang xác minh sự kiện này ở hiện trường. Hệ thống cần thêm ${nodesNeeded} Nhân chứng (Bodhi Nodes) nữa để đạt 100% Sự thật!\n\n👉 Bấm vào link dưới bằng Trusking Browser để quét bằng chứng và nhận điểm Bodhi Points thưởng:\n\ntruth://${p2pData.path}\n\n#TruskingBrowser #BudaiAwakening #P2P`;
-
-      await Share.share({
-        message: message,
-        title: 'Kêu gọi Nút Sự Thật (Bodhi Nodes)'
-      });
-    } catch (error) {
-       console.error("Error sharing:", error.message);
-    }
+  // Phase 10: Xác nhận Link Web Thương Hiệu (Vouch for Brand)
+  const vouchForBrand = () => {
+    if (!currentDomain) return;
+    const newScore = brandSafetyScore + 10;
+    
+    // Cập nhật điểm an toàn của Domain lên mạng P2P
+    gun.get('brand_safety').get(currentDomain).put({ score: newScore, last_verified: Date.now() });
+    
+    // Thưởng Bodhi Point cho thợ săn sự thật
+    setBodhiPoints(prev => prev + 2);
+    setMinedReward('+2 Pts (Brand Vouched)');
+    setTimeout(() => setMinedReward(null), 3000);
   };
 
   const handleGo = () => {
@@ -267,6 +269,8 @@ export default function App() {
     setP2pData(null);
     setTruthScore(null);
     setEvidenceList([]); // Reset bằng chứng cũ
+    setCurrentDomain(null);
+    setBrandSafetyScore(0);
 
     // Bắt giao thức Mạng Sự Thật (P2P BTVE) - Zero Infrastructure Cost
     if (query.startsWith('truth://') || query.startsWith('trusking://')) {
@@ -310,6 +314,17 @@ export default function App() {
     if (!query.startsWith('http')) {
       query = `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
     }
+    
+    // Phase 10: Tính toán Safety Score cho Domain
+    const domain = query.replace(/^(?:https?:\/\/)?(?:www\.)?/i, '').split('/')[0];
+    setCurrentDomain(domain);
+    
+    gun.get('brand_safety').get(domain).on((data) => {
+      if (data && data.score) {
+        setBrandSafetyScore(data.score);
+      }
+    });
+
     setCurrentUrl(query);
     setIsLoading(false);
   };
@@ -443,16 +458,44 @@ export default function App() {
       {p2pContent ? (
         <WebView originWhitelist={['*']} source={{ html: p2pContent }} style={styles.webview} />
       ) : (
-        <WebView
-          ref={webViewRef}
-          source={{ uri: currentUrl }}
-          style={styles.webview}
-          onNavigationStateChange={(navState) => {
-            if (navState.url !== currentUrl && navState.url.startsWith('http')) {
-              setUrlInput(navState.url);
-            }
-          }}
-        />
+        <View style={{flex: 1}}>
+          <WebView
+            ref={webViewRef}
+            source={{ uri: currentUrl }}
+            style={styles.webview}
+            onNavigationStateChange={(navState) => {
+              if (navState.url !== currentUrl && navState.url.startsWith('http')) {
+                setUrlInput(navState.url);
+                const newDomain = navState.url.replace(/^(?:https?:\/\/)?(?:www\.)?/i, '').split('/')[0];
+                if (newDomain !== currentDomain) {
+                   setCurrentDomain(newDomain);
+                   gun.get('brand_safety').get(newDomain).once((data) => {
+                      setBrandSafetyScore(data ? data.score || 0 : 0);
+                   });
+                }
+              }
+            }}
+          />
+          
+          {/* Brand Safety Shield (Phase 10) */}
+          {currentDomain && (
+            <View style={styles.brandShieldContainer}>
+               <View style={styles.brandShieldInfo}>
+                 <Ionicons name={brandSafetyScore > 20 ? "shield-checkmark" : "warning"} size={20} color={brandSafetyScore > 20 ? "#4CAF50" : "#F44336"} />
+                 <View style={{marginLeft: 10, flex: 1}}>
+                    <Text style={styles.brandDomainText}>{currentDomain}</Text>
+                    <Text style={styles.brandSafetyText}>
+                      {brandSafetyScore > 20 ? 'Thương hiệu An toàn (Cộng đồng xác thực)' : 'Tên miền chưa được kiểm chứng!'}
+                    </Text>
+                 </View>
+               </View>
+               
+               <TouchableOpacity onPress={vouchForBrand} style={styles.vouchBtn}>
+                  <Text style={styles.vouchBtnText}>Bảo Lãnh (+2 Bodhi)</Text>
+               </TouchableOpacity>
+            </View>
+          )}
+        </View>
       )}
       <StatusBar style="dark" />
     </SafeAreaView>
@@ -529,5 +572,18 @@ const styles = StyleSheet.create({
   },
   viralPrompt: {
     marginTop: 12, fontSize: 11, color: '#F57C00', fontWeight: '600', textAlign: 'center', backgroundColor: '#FFF3E0', paddingVertical: 6, borderRadius: 8, overflow: 'hidden'
-  }
+  },
+  
+  // Brand Safety Shield
+  brandShieldContainer: {
+    position: 'absolute', bottom: 30, left: 16, right: 16, backgroundColor: 'rgba(255,255,255,0.95)',
+    padding: 16, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    shadowColor: '#000', shadowOpacity: 0.15, shadowOffset: {height: 6, width: 0}, shadowRadius: 16, elevation: 8,
+    borderWidth: 1, borderColor: '#eee'
+  },
+  brandShieldInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  brandDomainText: { fontSize: 13, fontWeight: '800', color: '#333' },
+  brandSafetyText: { fontSize: 11, color: '#666', marginTop: 2 },
+  vouchBtn: { backgroundColor: '#E8F5E9', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: '#C8E6C9' },
+  vouchBtnText: { color: '#2E7D32', fontWeight: '800', fontSize: 11 }
 });
