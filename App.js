@@ -27,6 +27,10 @@ export default function App() {
   const [truthScore, setTruthScore] = useState(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
+  // Trust Economy State (Bodhi Wallet)
+  const [bodhiPoints, setBodhiPoints] = useState(50); // Điểm khởi tạo
+  const [minedReward, setMinedReward] = useState(null); // Trạng thái show thông báo đào thành công
+
   const webViewRef = useRef(null);
 
   useEffect(() => {
@@ -179,6 +183,19 @@ export default function App() {
       });
       setIsVerifying(false);
 
+      // Trust Economy: MINT TOKEN (Proof-of-Truth)
+      if (finalPercentage > 75 && totalConflicts === 0) {
+        // Nút mạng chạy xác minh trung thực, cộng điểm Uy tín
+        setBodhiPoints(prev => prev + 5);
+        setMinedReward('+5 Bodhi Points Mined!');
+        setTimeout(() => setMinedReward(null), 4000);
+      } else if (totalConflicts > 0) {
+        // Trừ điểm hệ thống nếu phát hiện bằng chứng giả/tham gia mạng lưới xấu
+        setBodhiPoints(prev => Math.max(0, prev - 15));
+        setMinedReward('-15 Points (Conflict Penalty)');
+        setTimeout(() => setMinedReward(null), 4000);
+      }
+
     }, 2800); // 2.8 giây chạy thuật toán phân tích
   };
 
@@ -232,7 +249,28 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Thanh Bar */}
+      {/* V-ID Trust Economy Wallet Bar */}
+      <View style={styles.walletBar}>
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+          <Ionicons name="person-circle" size={18} color="#D81B60" />
+          <Text style={styles.walletNodeId}> Trusking_Node_7A9X</Text>
+        </View>
+        <View style={styles.walletPoints}>
+          <Text style={styles.pointsText}>{bodhiPoints} Bodhi Pts</Text>
+          <Ionicons name="diamond" size={14} color="#8E24AA" />
+        </View>
+      </View>
+      
+      {/* Thông báo Đào Coin (Proof-of-Truth) */}
+      {minedReward && (
+        <View style={[styles.miningAlert, {backgroundColor: minedReward.includes('+') ? '#E8F5E9' : '#FFEBEE'}]}>
+          <Text style={[styles.miningText, {color: minedReward.includes('+') ? '#2E7D32' : '#C62828'}]}>
+            {minedReward}
+          </Text>
+        </View>
+      )}
+
+      {/* Thanh Bar URL */}
       <View style={styles.header}>
         <TextInput
           style={styles.urlInput}
@@ -317,8 +355,24 @@ export default function App() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fdfbf7' }, // Màu nền ấm tựa giấy cũ
+  
+  // Wallet Bar
+  walletBar: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 15, paddingVertical: 8, backgroundColor: '#f3e5f5',
+    borderBottomWidth: 1, borderBottomColor: '#e1bee7',
+  },
+  walletNodeId: { fontSize: 12, fontWeight: 'bold', color: '#4A148C' },
+  walletPoints: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowOffset: {width: 0, height: 1}, shadowRadius: 2, elevation: 1 },
+  pointsText: { fontSize: 12, fontWeight: '800', color: '#8E24AA', marginRight: 4 },
+  
+  miningAlert: {
+    padding: 8, alignItems: 'center', justifyContent: 'center', position: 'absolute', top: 90, alignSelf: 'center', zIndex: 10, borderRadius: 20, shadowColor: '#000', shadowOpacity: 0.1, shadowOffset: {width: 0, height: 2}, shadowRadius: 4, elevation: 3, paddingHorizontal: 20
+  },
+  miningText: { fontSize: 13, fontWeight: 'bold' },
+
   header: {
-    flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 10, paddingTop: 45, 
+    flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 10, 
     backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f0e6e6',
     alignItems: 'center', shadowColor: '#A1887F', shadowOpacity: 0.1, shadowOffset: { width: 0, height: 2 }, shadowRadius: 4, elevation: 3,
   },
