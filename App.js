@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, TextInput, TouchableOpacity, SafeAreaView, Keyb
 import { WebView } from 'react-native-webview';
 import { useState, useRef, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Gun from 'gun';
 import * as Crypto from 'expo-crypto'; // Module Crypto để mã hóa Identity
@@ -63,12 +64,12 @@ export default function App() {
     let evidenceRows = '';
     if (truthScore && truthScore.evidenceGraph) {
        evidenceRows = truthScore.evidenceGraph.map(ev => `
-         <tr style="${ev.has_conflict ? 'background-color: #ffebee;' : ''}">
-           <td><code style="color:#8E24AA">${ev.id}</code></td>
-           <td>${ev.type.toUpperCase()}<br/><span style="font-size:8px; color:#999">🔒 Encrypted</span></td>
-           <td>${ev.hashed_region}</td>
-           <td>${(ev.node_trust * 100).toFixed(0)}%</td>
-           <td style="color: ${ev.has_conflict ? '#D32F2F' : '#388E3C'}; font-weight:bold;">
+         <tr style="${ev.has_conflict ? 'background-color: #fff0f0;' : ''}">
+           <td><code style="color:#8E24AA; font-weight: 600;">${ev.id}</code></td>
+           <td><span class="pill">${ev.type.toUpperCase()}</span><br/><span style="font-size:9px; color:#aaa; margin-top:4px; display:inline-block;">🔒 Encrypted</span></td>
+           <td style="color:#555; font-size: 11px">${ev.hashed_region}</td>
+           <td style="font-weight:600; color:#444;">${(ev.node_trust * 100).toFixed(0)}%</td>
+           <td style="color: ${ev.has_conflict ? '#D32F2F' : '#2E7D32'}; font-weight:800; font-size:13px;">
               ${ev.has_conflict ? '-' + Math.abs(ev.calculated_score).toFixed(1) : '+' + ev.calculated_score.toFixed(1)}
            </td>
          </tr>
@@ -79,27 +80,37 @@ export default function App() {
       <html>
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
           <style>
-            body { font-family: -apple-system, sans-serif; padding: 20px; background: #fdfbf7; color: #4E342E; margin:0;}
-            h1 { color: #8E24AA; font-size: 20px; border-bottom: 2px solid #8E24AA; padding-bottom: 10px;}
-            .node { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 4px 12px rgba(161,136,127,0.1); margin-top:20px; border: 1px solid #f0e6e6;}
-            .evidence-graph { margin-top: 25px; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0; background: #fff; }
-            .evidence-header { background: #5D4037; color: #fff; padding: 10px 15px; font-weight: bold; font-size: 14px; }
-            table { width: 100%; border-collapse: collapse; font-size: 11px; }
-            th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
-            th { background-color: #f5f5f5; color: #666; font-weight: 600; }
-            .formula-box { background: #f3e5f5; border-left: 4px solid #8E24AA; padding: 10px; margin-top: 15px; font-size: 12px; color: #4A148C; font-family: monospace; }
+            body { font-family: 'Outfit', -apple-system, sans-serif; padding: 24px; background: #faf9f6; color: #333; margin:0;}
+            h1 { color: #4A148C; font-size: 22px; font-weight: 800; border-bottom: 2px solid rgba(81, 45, 168, 0.1); padding-bottom: 12px; margin-bottom: 24px;}
+            
+            .node { background: rgba(255, 255, 255, 0.9); padding: 20px; border-radius: 16px; box-shadow: 0 10px 30px rgba(81, 45, 168, 0.05); border: 1px solid rgba(255,255,255,0.6); backdrop-filter: blur(10px); }
+            .node-label { color: #9E9E9E; font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px; margin-bottom: 8px;}
+            .node-content { font-size: 16px; line-height: 1.6; color: #212121; font-weight: 400; }
+            .crypto-hash { font-size: 10px; color: #9E9E9E; margin-top: 16px; font-family: monospace; background: #f0f0f0; display: inline-block; padding: 4px 8px; border-radius: 6px; letter-spacing: 0.5px;}
+            
+            .evidence-graph { margin-top: 32px; border-radius: 16px; overflow: hidden; border: 1px solid rgba(0,0,0,0.04); background: #fff; box-shadow: 0 12px 40px rgba(81, 45, 168, 0.08); }
+            .evidence-header { background: linear-gradient(135deg, #4A148C 0%, #8E24AA 100%); color: #fff; padding: 14px 20px; font-weight: 800; font-size: 13px; letter-spacing: 0.5px; text-transform: uppercase; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th, td { text-align: left; padding: 14px 16px; border-bottom: 1px solid #f5f5f5; }
+            th { background-color: #fafafa; color: #757575; font-weight: 800; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;}
+            tr:last-child td { border-bottom: none; }
+            .formula-box { background: rgba(142, 36, 170, 0.04); border-left: 4px solid #8E24AA; padding: 14px 20px; font-size: 12px; color: #4A148C; font-family: monospace; }
+            
+            .pill { background: rgba(142,36,170,0.1); color: #8E24AA; padding: 4px 10px; border-radius: 12px; font-weight: 800; font-size: 10px; letter-spacing: 0.5px; }
+            .waiting-lbl { margin-top:30px; text-align:center; color:#9E9E9E; font-size:13px; font-weight: 600; letter-spacing: 0.5px;}
           </style>
         </head>
         <body>
           <h1>🌐 Trusking / ${p2pData.path.split('/').pop()}</h1>
           
           <div class="node">
-            <p style="color: #666; font-size: 12px; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">Decentralized Content (Layer 1)</p>
-            <div style="font-size: 16px; line-height: 1.5; color: #212121;">
+            <div class="node-label">Decentralized Content (Layer 1)</div>
+            <div class="node-content">
               ${p2pData.content}
             </div>
-            <div style="font-size: 11px; color: #999; margin-top: 15px;">Cryptographic Hash: QmXyz_0987_aBc</div>
+            <div class="crypto-hash">Hash: QmXyz_0987_aBc_${Math.random().toString(36).substring(7)}</div>
           </div>
 
           ${truthScore ? `
@@ -111,12 +122,12 @@ export default function App() {
              </table>
              <div class="formula-box">
                 Σ (Base + Weight×Prox + NodeTrust + Witness) - Conflict<br>
-                Total Accumulated Score: ${truthScore.percentage}/100
+                <span style="font-weight: 800; font-size: 14px; margin-top: 6px; display: block;">Total Accumulated Score: ${truthScore.percentage}/100</span>
              </div>
           </div>
-          ` : '<div style="margin-top:20px; text-align:center; color:#888; font-size:12px;">Waiting for DePIN Truth Engine calculation...</div>'}
+          ` : '<div class="waiting-lbl">Waiting for DePIN Truth Engine calculation...</div>'}
           
-          <div style="margin-top: 30px; text-align: center; color: #aaa; font-size: 11px;">Powered by 0-cost Local DePIN (Decentralized Physical Infrastructure Networks)</div>
+          <div style="margin-top: 40px; text-align: center; color: #BDBDBD; font-size: 11px; font-weight: 600; letter-spacing: 0.5px;">Powered by Zero-cost Local DePIN (Decentralized Physical Infrastructure Networks)</div>
         </body>
       </html>
     `;
@@ -292,13 +303,17 @@ export default function App() {
       {/* V-ID Trust Economy Wallet Bar */}
       <View style={styles.walletBar}>
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
-          <Ionicons name="shield-checkmark" size={16} color="#4A148C" style={{marginRight: 4}} />
-          <Text style={styles.walletNodeId}> ANON_ID: {anonymousId}</Text>
+          <Ionicons name="shield-checkmark" size={16} color="#4A148C" style={{marginRight: 6}} />
+          <Text style={styles.walletNodeId}>ANON_ID: {anonymousId}</Text>
         </View>
-        <View style={styles.walletPoints}>
+        <LinearGradient 
+          colors={['#8E24AA', '#512DA8']} 
+          start={{x: 0, y: 0}} end={{x: 1, y: 1}} 
+          style={styles.walletPointsBox}
+        >
           <Text style={styles.pointsText}>{bodhiPoints} Bodhi Pts</Text>
-          <Ionicons name="diamond" size={14} color="#8E24AA" />
-        </View>
+          <Ionicons name="diamond" size={13} color="#FFF" />
+        </LinearGradient>
       </View>
       
       {/* Thông báo Đào Coin (Proof-of-Truth) */}
@@ -317,6 +332,7 @@ export default function App() {
           value={urlInput}
           onChangeText={setUrlInput}
           placeholder="truth:// path or https://"
+          placeholderTextColor="#BDBDBD"
           autoCapitalize="none"
           autoCorrect={false}
           onSubmitEditing={handleGo}
@@ -324,9 +340,9 @@ export default function App() {
         />
         <TouchableOpacity style={styles.goButton} onPress={handleGo}>
           {isLoading ? (
-            <ActivityIndicator color="#563ACC" />
+            <ActivityIndicator color="#8E24AA" />
           ) : (
-            <Ionicons name="arrow-forward-circle" size={32} color="#563ACC" />
+            <Ionicons name="search" size={24} color="#8E24AA" />
           )}
         </TouchableOpacity>
       </View>
@@ -334,10 +350,10 @@ export default function App() {
       {/* BTVE TRUTH METER (Lớp 3) */}
       {(isVerifying || truthScore || p2pData) && p2pContent && (
         <View style={styles.truthMeterContainer}>
-          <View style={styles.truthMeterHeader}>
-            <Ionicons name="flower-outline" size={18} color="#fff" style={{marginRight: 6}} />
+          <LinearGradient colors={['#311B92', '#8E24AA']} start={{x: 0, y: 0}} end={{x: 1, y: 1}} style={styles.truthMeterHeader}>
+            <Ionicons name="flower-outline" size={18} color="#fff" style={{marginRight: 8}} />
             <Text style={styles.truthMeterTitle}>Budai Awakening Verification</Text>
-          </View>
+          </LinearGradient>
           
           <View style={styles.truthMeterBody}>
             {isVerifying && !truthScore ? (
@@ -347,24 +363,26 @@ export default function App() {
               </View>
             ) : truthScore ? (
               <View style={styles.scoreState}>
-                <View style={styles.scoreCircle}>
-                  <Text style={[styles.scoreNumber, {color: truthScore.percentage > 70 ? '#4CAF50' : '#FF9800'}]}>
+                <LinearGradient 
+                   colors={truthScore.percentage > 70 ? ['#E8F5E9', '#C8E6C9'] : ['#FFF3E0', '#FFE0B2']}
+                   style={styles.scoreCircle}>
+                  <Text style={[styles.scoreNumber, {color: truthScore.percentage > 70 ? '#2E7D32' : '#EF6C00'}]}>
                     {truthScore.percentage}%
                   </Text>
-                  <Text style={styles.scoreLabel}>AWAKENING</Text>
-                </View>
+                  <Text style={styles.scoreLabel}>TRUTH SCORE</Text>
+                </LinearGradient>
                 <View style={styles.scoreDetails}>
                   <Text style={[styles.scoreStatus, {color: truthScore.percentage > 70 ? '#2E7D32' : '#E65100'}]}>
                     {truthScore.percentage > 70 ? 'TRUTH AWAKENED' : 'CLOUDS OF DOUBT'}
                   </Text>
                   <Text style={styles.scoreSubtext}>
-                    <Ionicons name="people" size={12} color="#8E24AA" /> Verified by {truthScore.peersAssisted} Bodhi Nodes
+                    <Ionicons name="people" size={13} color="#8E24AA" /> Verified by {truthScore.peersAssisted} Bodhi Nodes
                   </Text>
                   <Text style={styles.scoreSubtext}>
-                    <Ionicons name="lock-closed" size={12} color="#8E24AA" /> WebCrypto Dharma Seals Valid
+                    <Ionicons name="lock-closed" size={13} color="#8E24AA" /> WebCrypto Dharma Seals Valid
                   </Text>
                   <Text style={styles.scoreSubtext}>
-                    <Ionicons name="location" size={12} color="#8E24AA" /> Proximate Reality Grounded
+                    <Ionicons name="location" size={13} color="#8E24AA" /> Proximate Reality Grounded
                   </Text>
                 </View>
               </View>
@@ -375,9 +393,11 @@ export default function App() {
             )}
 
             {/* Nút Đóng góp Bằng chứng P2P */}
-            <TouchableOpacity style={styles.submitEvidenceBtn} onPress={submitEvidence}>
-               <Ionicons name="add-circle" size={18} color="#fff" style={{marginRight: 8}}/>
-               <Text style={{color: '#fff', fontWeight:'bold'}}>Contribute Encrypted Evidence</Text>
+            <TouchableOpacity onPress={submitEvidence}>
+               <LinearGradient colors={['#D81B60', '#C2185B']} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.submitEvidenceBtn}>
+                 <Ionicons name="add-circle" size={18} color="#fff" style={{marginRight: 8}}/>
+                 <Text style={styles.submitEvidenceText}>Contribute Encrypted Evidence</Text>
+               </LinearGradient>
             </TouchableOpacity>
 
           </View>
@@ -405,61 +425,68 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fdfbf7' }, // Màu nền ấm tựa giấy cũ
+  container: { flex: 1, backgroundColor: '#faf9f6' }, // Màu nền xám kem sang trọng
   
   // Wallet Bar
   walletBar: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 15, paddingVertical: 8, backgroundColor: '#f3e5f5',
-    borderBottomWidth: 1, borderBottomColor: '#e1bee7',
+    paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#f3e5f5',
+    borderBottomWidth: 1, borderBottomColor: 'rgba(142,36,170,0.1)',
   },
-  walletNodeId: { fontSize: 12, fontWeight: 'bold', color: '#4A148C' },
-  walletPoints: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowOffset: {width: 0, height: 1}, shadowRadius: 2, elevation: 1 },
-  pointsText: { fontSize: 12, fontWeight: '800', color: '#8E24AA', marginRight: 4 },
+  walletNodeId: { fontSize: 13, fontWeight: '800', color: '#4A148C', letterSpacing: 0.5 },
+  walletPointsBox: { 
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, 
+    borderRadius: 20, shadowColor: '#4A148C', shadowOpacity: 0.2, shadowOffset: {width: 0, height: 2}, shadowRadius: 4, elevation: 3 
+  },
+  pointsText: { fontSize: 13, fontWeight: '900', color: '#FFF', marginRight: 6 },
   
   miningAlert: {
-    padding: 8, alignItems: 'center', justifyContent: 'center', position: 'absolute', top: 90, alignSelf: 'center', zIndex: 10, borderRadius: 20, shadowColor: '#000', shadowOpacity: 0.1, shadowOffset: {width: 0, height: 2}, shadowRadius: 4, elevation: 3, paddingHorizontal: 20
+    padding: 10, alignItems: 'center', justifyContent: 'center', position: 'absolute', top: 110, alignSelf: 'center', zIndex: 10, borderRadius: 24, shadowColor: '#000', shadowOpacity: 0.15, shadowOffset: {width: 0, height: 4}, shadowRadius: 8, elevation: 5, paddingHorizontal: 24
   },
-  miningText: { fontSize: 13, fontWeight: 'bold' },
+  miningText: { fontSize: 14, fontWeight: '800' },
 
   header: {
-    flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 10, 
-    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f0e6e6',
-    alignItems: 'center', shadowColor: '#A1887F', shadowOpacity: 0.1, shadowOffset: { width: 0, height: 2 }, shadowRadius: 4, elevation: 3,
+    flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 14, 
+    backgroundColor: '#fff', shadowColor: '#A1887F', shadowOpacity: 0.08, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 3,
+    zIndex: 1, paddingBottom: 16
   },
   urlInput: {
-    flex: 1, height: 44, backgroundColor: '#fcfaf8', borderRadius: 12, paddingHorizontal: 15, fontSize: 16, color: '#4E342E', borderWidth: 1, borderColor: '#e8dfdf',
+    flex: 1, height: 48, backgroundColor: '#f5f5f5', borderRadius: 24, paddingHorizontal: 20, fontSize: 15, color: '#212121', borderWidth: 1, borderColor: '#eeeeee', fontWeight: '500'
   },
-  goButton: { marginLeft: 12, justifyContent: 'center', alignItems: 'center', width: 32, height: 32 },
-  webview: { flex: 1 },
+  goButton: { marginLeft: 14, justifyContent: 'center', alignItems: 'center', width: 44, height: 44, backgroundColor: '#f3e5f5', borderRadius: 22 },
+  webview: { flex: 1, backgroundColor: '#faf9f6' },
   
   // Truth Meter Styles (Budai Theme)
   truthMeterContainer: {
-    margin: 12, backgroundColor: '#fff', borderRadius: 12,
-    shadowColor: '#8E24AA', shadowOpacity: 0.15, shadowOffset: { width: 0, height: 4 }, shadowRadius: 10, elevation: 5,
-    borderWidth: 1, borderColor: '#8E24AA30', overflow: 'hidden'
+    margin: 16, backgroundColor: '#fff', borderRadius: 20,
+    shadowColor: '#311B92', shadowOpacity: 0.12, shadowOffset: { width: 0, height: 8 }, shadowRadius: 20, elevation: 8,
+    borderWidth: 1, borderColor: 'rgba(142,36,170,0.1)', overflow: 'hidden'
   },
   truthMeterHeader: {
-    backgroundColor: '#8E24AA', paddingVertical: 8, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center' // Deep Lotus Purple
+    paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center'
   },
-  truthMeterTitle: { color: '#fff', fontSize: 13, fontWeight: '700', letterSpacing: 0.5 },
-  truthMeterBody: { padding: 15 },
-  verifyingState: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10 },
-  verifyingText: { marginLeft: 10, color: '#666', fontSize: 13, fontStyle: 'italic' },
+  truthMeterTitle: { color: '#fff', fontSize: 14, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase' },
+  truthMeterBody: { padding: 20 },
+  verifyingState: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16 },
+  verifyingText: { marginLeft: 12, color: '#757575', fontSize: 14, fontWeight: '600' },
   scoreState: { flexDirection: 'row', alignItems: 'center' },
   scoreCircle: { 
-    width: 80, height: 80, borderRadius: 40, borderWidth: 4, borderColor: '#f3e5f5', 
-    justifyContent: 'center', alignItems: 'center', borderTopColor: '#D81B60', borderRightColor: '#D81B60' // Lotus Pink Highlight
+    width: 90, height: 90, borderRadius: 45,
+    justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#000', shadowOpacity: 0.1, shadowOffset: {width: 0, height: 4}, shadowRadius: 8, elevation: 4
   },
-  scoreNumber: { fontSize: 24, fontWeight: '900', color: '#4E342E' },
-  scoreLabel: { fontSize: 8, fontWeight: 'bold', color: '#8E24AA', marginTop: 2 },
-  scoreDetails: { marginLeft: 20, flex: 1 },
-  scoreStatus: { fontSize: 17, fontWeight: 'bold', marginBottom: 4 },
-  scoreSubtext: { fontSize: 12, color: '#5D4037', marginBottom: 3 },
+  scoreNumber: { fontSize: 26, fontWeight: '900' },
+  scoreLabel: { fontSize: 9, fontWeight: '800', color: '#757575', marginTop: 2, textTransform:'uppercase', letterSpacing:0.5 },
+  scoreDetails: { marginLeft: 24, flex: 1 },
+  scoreStatus: { fontSize: 18, fontWeight: '900', marginBottom: 6, letterSpacing: -0.5 },
+  scoreSubtext: { fontSize: 12, color: '#616161', marginBottom: 4, fontWeight: '500' },
 
   submitEvidenceBtn: {
-    backgroundColor: '#D81B60', padding: 12, borderRadius: 8, flexDirection: 'row', 
-    alignItems: 'center', justifyContent: 'center', marginTop: 15,
-    shadowColor: '#D81B60', shadowOpacity: 0.3, shadowOffset: {height: 2, width: 0}, shadowRadius: 5
+    padding: 14, borderRadius: 12, flexDirection: 'row', 
+    alignItems: 'center', justifyContent: 'center', marginTop: 20,
+    shadowColor: '#D81B60', shadowOpacity: 0.4, shadowOffset: {height: 4, width: 0}, shadowRadius: 12, elevation: 6
+  },
+  submitEvidenceText: {
+    color: '#fff', fontWeight: '800', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1
   }
 });

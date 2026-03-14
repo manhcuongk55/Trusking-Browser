@@ -12,6 +12,8 @@
     "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~55.0.6",
+    "expo-blur": "~55.0.9",
+    "expo-linear-gradient": "~55.0.8",
     "expo-status-bar": "~55.0.4",
     "gun": "^0.2020.1241",
     "react": "19.2.0",
