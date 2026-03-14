@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, SafeAreaView, Keyboard, ActivityIndicator, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, SafeAreaView, Keyboard, ActivityIndicator, ScrollView, Share } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useState, useRef, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -241,6 +241,22 @@ export default function App() {
     });
   };
 
+  // Vòng lặp Viral (Pillar 5): Kêu gọi đồng minh (Bodhi Nodes) xung quanh
+  const callForBackup = async () => {
+    if (!p2pData || !p2pData.path) return;
+    try {
+      const nodesNeeded = Math.max(0, 3 - (truthScore?.peersAssisted || 0));
+      const message = `🚨 [Trusking Mạng Sự Thật]\n\nTôi đang xác minh sự kiện này ở hiện trường. Hệ thống cần thêm ${nodesNeeded} Nhân chứng (Bodhi Nodes) nữa để đạt 100% Sự thật!\n\n👉 Bấm vào link dưới bằng Trusking Browser để quét bằng chứng và nhận điểm Bodhi Points thưởng:\n\ntruth://${p2pData.path}\n\n#TruskingBrowser #BudaiAwakening #P2P`;
+
+      await Share.share({
+        message: message,
+        title: 'Kêu gọi Nút Sự Thật (Bodhi Nodes)'
+      });
+    } catch (error) {
+       console.error("Error sharing:", error.message);
+    }
+  };
+
   const handleGo = () => {
     Keyboard.dismiss();
     let query = urlInput.trim();
@@ -392,13 +408,32 @@ export default function App() {
                </View>
             )}
 
-            {/* Nút Đóng góp Bằng chứng P2P */}
-            <TouchableOpacity onPress={submitEvidence}>
-               <LinearGradient colors={['#D81B60', '#C2185B']} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.submitEvidenceBtn}>
-                 <Ionicons name="add-circle" size={18} color="#fff" style={{marginRight: 8}}/>
-                 <Text style={styles.submitEvidenceText}>Contribute Encrypted Evidence</Text>
-               </LinearGradient>
-            </TouchableOpacity>
+             {/* Hành động P2P */}
+             <View style={styles.actionButtonsRow}>
+               {/* Nút Đóng góp Bằng chứng P2P */}
+               <TouchableOpacity onPress={submitEvidence} style={{flex: 1}}>
+                  <LinearGradient colors={['#D81B60', '#C2185B']} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.submitEvidenceBtn}>
+                    <Ionicons name="add-circle" size={16} color="#fff" style={{marginRight: 6}}/>
+                    <Text style={styles.submitEvidenceText}>Gửi Bằng Chứng</Text>
+                  </LinearGradient>
+               </TouchableOpacity>
+
+               {/* Nút Kêu gọi Đồng minh (Viral / Share) */}
+               {truthScore && truthScore.percentage < 100 && (
+                  <TouchableOpacity onPress={callForBackup} style={{flex: 1, marginLeft: 10}}>
+                     <LinearGradient colors={['#FF9800', '#F57C00']} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.submitEvidenceBtn}>
+                       <Ionicons name="share-social" size={16} color="#fff" style={{marginRight: 6}}/>
+                       <Text style={styles.submitEvidenceText}>Gọi Nhân Chứng</Text>
+                     </LinearGradient>
+                  </TouchableOpacity>
+               )}
+             </View>
+
+             {truthScore && truthScore.peersAssisted < 3 && (
+               <Text style={styles.viralPrompt}>
+                 <Ionicons name="alert-circle" size={12} color="#F57C00" /> Cần thêm {3 - truthScore.peersAssisted} Bodhi Nodes nữa để đạt Sự thật 100%. Hãy mời người xung quanh!
+               </Text>
+             )}
 
           </View>
         </View>
@@ -481,12 +516,18 @@ const styles = StyleSheet.create({
   scoreStatus: { fontSize: 18, fontWeight: '900', marginBottom: 6, letterSpacing: -0.5 },
   scoreSubtext: { fontSize: 12, color: '#616161', marginBottom: 4, fontWeight: '500' },
 
+  actionButtonsRow: {
+    flexDirection: 'row', justifyContent: 'space-between', marginTop: 20, alignItems: 'center'
+  },
   submitEvidenceBtn: {
-    padding: 14, borderRadius: 12, flexDirection: 'row', 
-    alignItems: 'center', justifyContent: 'center', marginTop: 20,
-    shadowColor: '#D81B60', shadowOpacity: 0.4, shadowOffset: {height: 4, width: 0}, shadowRadius: 12, elevation: 6
+    padding: 12, borderRadius: 12, flexDirection: 'row', 
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#D81B60', shadowOpacity: 0.3, shadowOffset: {height: 4, width: 0}, shadowRadius: 8, elevation: 4
   },
   submitEvidenceText: {
-    color: '#fff', fontWeight: '800', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1
+    color: '#fff', fontWeight: '800', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5
+  },
+  viralPrompt: {
+    marginTop: 12, fontSize: 11, color: '#F57C00', fontWeight: '600', textAlign: 'center', backgroundColor: '#FFF3E0', paddingVertical: 6, borderRadius: 8, overflow: 'hidden'
   }
 });
