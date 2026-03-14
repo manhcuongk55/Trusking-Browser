@@ -27,6 +27,7 @@ export default function App() {
   // BTVE Truth Meter State
   const [truthScore, setTruthScore] = useState(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [evidenceList, setEvidenceList] = useState([]); // Chứa bằng chứng real-time từ mạn lưới P2P
 
   // Trust Economy State (Bodhi Wallet)
   const [bodhiPoints, setBodhiPoints] = useState(50); // Điểm khởi tạo
@@ -123,97 +124,110 @@ export default function App() {
     setIsLoading(false);
   }, [p2pData, truthScore]);
 
-  // Hàm mô phỏng BTVE chạy Local trong Browser (Hỗ trợ Truth Graph 5-layer)
-  const runLocalBTVE = async (path) => {
+  // Thay vì chạy 1 lần với Mock Data, giờ BTVE là cỗ máy tính toán liên tục dựa trên mảng `evidenceGraph` truyền vào
+  const calculateTruthScore = (evidenceGraph) => {
     setIsVerifying(true);
-    setTruthScore(null);
     
-    setTimeout(() => {
-      // Dữ liệu giả lập biểu diễn một "Evidence Graph" (Đồ thị Bằng chứng)
-      // Privacy Pillar 4: Không gửi ID thường hay tọa độ GPS chính xác. Mọi thứ bị băm (Hashed)
-      const evidenceGraph = [
-        { id: '0x8F9A...', type: 'video', node_trust: 0.95, proximity_meters: 10, hashed_region: 'Zone_A89 (5km²)', has_conflict: false }, 
-        { id: '0x3C1B...', type: 'photo', node_trust: 0.80, proximity_meters: 150, hashed_region: 'Zone_A89 (5km²)', has_conflict: false },
-        { id: '0x99D2...', type: 'text',  node_trust: 0.50, proximity_meters: 50, hashed_region: 'Zone_A89 (5km²)', has_conflict: false },
-        { id: '0xFF11...', type: 'video', node_trust: 0.10, proximity_meters: 2000, hashed_region: 'Zone_X99 (Far)', has_conflict: true  }, // Fake/Conflict Node
-      ];
+    /* THUẬT TOÁN LÕI (TRUTH ENGINE)
+       TruthScore = SourceTrust + EvidenceWeight + WitnessCount + Proximity - ConflictPenalty
+    */
+    let totalScore = 0;
+    let validWitnesses = 0;
+    let totalConflicts = 0;
 
-      /* THUẬT TOÁN LÕI (TRUTH ENGINE)
-         TruthScore = SourceTrust + EvidenceWeight + WitnessCount + Proximity - ConflictPenalty
-      */
-      let totalScore = 0;
-      let validWitnesses = 0;
-      let totalConflicts = 0;
+    // Tính điểm cơ sở (Giả định nguồn phát ban đầu có uy tín trung bình)
+    const baseSourceTrust = 20; 
+    totalScore += baseSourceTrust;
 
-      // Tính điểm cơ sở (Giả định nguồn phát ban đầu có uy tín trung bình)
-      const baseSourceTrust = 20; 
-      totalScore += baseSourceTrust;
-
-      const evidenceDetails = evidenceGraph.map(ev => {
-        // 1. Nếu hệ thống mạng P2P phát hiện mâu thuẫn (Conflict/Deepfake)
-        if (ev.has_conflict) {
-          totalConflicts++;
-          const penalty = 15; // Phạt nặng
-          totalScore -= penalty;
-          return { ...ev, calculated_score: -penalty, status: 'REJECTED (Conflict)' };
-        }
-
-        // Nếu hợp lệ, bắt đầu cộng dồn
-        validWitnesses++;
-
-        // 2. Evidence Weight
-        let evWeight = 0;
-        if (ev.type === 'video') evWeight = 15;
-        else if (ev.type === 'photo') evWeight = 10;
-        else if (ev.type === 'text') evWeight = 2; // Lời nói suông ít giá trị
-
-        // 3. Proximity (Khoảng cách) - Càng gần hiện trường điểm càng cao
-        let proxMultiplier = 1.0;
-        if (ev.proximity_meters <= 50) proxMultiplier = 1.5;
-        else if (ev.proximity_meters <= 500) proxMultiplier = 1.0;
-        else proxMultiplier = 0.5;
-
-        // 4. Node Trust (Uy tín của Node đóng góp)
-        const nodeScore = ev.node_trust * 10;
-
-        // Tính tổng điểm cho Node này
-        const contribution = (evWeight * proxMultiplier) + nodeScore;
-        totalScore += contribution;
-
-        return { ...ev, calculated_score: contribution, status: 'ACCEPTED' };
-      });
-
-      // 5. Thưởng Witness Count (Nhiều nhân chứng độc lập xác nhận -> Điểm rốn)
-      if (validWitnesses >= 3) {
-        totalScore += (validWitnesses * 2); 
-      }
-
-      // Giới hạn max 100%
-      const finalPercentage = Math.max(0, Math.min(Math.round(totalScore), 100));
-      
-      setTruthScore({
-        percentage: finalPercentage,
-        peersAssisted: validWitnesses,
-        conflictsCaught: totalConflicts,
-        status: finalPercentage > 75 ? 'VERIFIED' : (finalPercentage > 40 ? 'SUSPICIOUS' : 'UNVERIFIED'),
-        evidenceGraph: evidenceDetails // Lưu lại đồ thị để render ra WebView
-      });
+    if (!evidenceGraph || evidenceGraph.length === 0) {
+      setTruthScore(null);
       setIsVerifying(false);
+      return;
+    }
 
-      // Trust Economy: MINT TOKEN (Proof-of-Truth)
-      if (finalPercentage > 75 && totalConflicts === 0) {
-        // Nút mạng chạy xác minh trung thực, cộng điểm Uy tín
-        setBodhiPoints(prev => prev + 5);
-        setMinedReward('+5 Bodhi Points Mined!');
-        setTimeout(() => setMinedReward(null), 4000);
-      } else if (totalConflicts > 0) {
-        // Trừ điểm hệ thống nếu phát hiện bằng chứng giả/tham gia mạng lưới xấu
-        setBodhiPoints(prev => Math.max(0, prev - 15));
-        setMinedReward('-15 Points (Conflict Penalty)');
-        setTimeout(() => setMinedReward(null), 4000);
+    const evidenceDetails = evidenceGraph.map(ev => {
+      // 1. Phạt mâu thuẫn (Conflict/Deepfake)
+      if (ev.has_conflict) {
+        totalConflicts++;
+        const penalty = 15;
+        totalScore -= penalty;
+        return { ...ev, calculated_score: -penalty, status: 'REJECTED (Conflict)' };
       }
 
-    }, 2800); // 2.8 giây chạy thuật toán phân tích
+      validWitnesses++;
+
+      // 2. Evidence Weight
+      let evWeight = 0;
+      if (ev.type === 'video') evWeight = 15;
+      else if (ev.type === 'photo') evWeight = 10;
+      else if (ev.type === 'text') evWeight = 2;
+
+      // 3. Proximity (Khoảng cách) -> Giờ dùng hashed_region thay vì số mét chính xác
+      let proxMultiplier = 1.0;
+      // Trong thực tế sẽ đo độ khít của Hashed Region, demo mặc định ở mức 1.5
+      if (ev.hashed_region && ev.hashed_region.includes('5km')) proxMultiplier = 1.5;
+
+      // 4. Node Trust (Uy tín của Node)
+      const nodeScore = ev.node_trust * 10;
+
+      const contribution = (evWeight * proxMultiplier) + nodeScore;
+      totalScore += contribution;
+
+      return { ...ev, calculated_score: contribution, status: 'ACCEPTED' };
+    });
+
+    // 5. Thưởng Witness Count
+    if (validWitnesses >= 3) {
+      totalScore += (validWitnesses * 2); 
+    }
+
+    const finalPercentage = Math.max(0, Math.min(Math.round(totalScore), 100));
+    
+    setTruthScore({
+      percentage: finalPercentage,
+      peersAssisted: validWitnesses,
+      conflictsCaught: totalConflicts,
+      status: finalPercentage > 75 ? 'VERIFIED' : (finalPercentage > 40 ? 'SUSPICIOUS' : 'UNVERIFIED'),
+      evidenceGraph: evidenceDetails 
+    });
+    setIsVerifying(false);
+
+    // Trust Economy: MINT TOKEN (Proof-of-Truth) - Demo Trigger
+    if (finalPercentage > 75 && totalConflicts === 0) {
+      setBodhiPoints(prev => prev + 5);
+      setMinedReward('+5 Bodhi Points Mined!');
+      setTimeout(() => setMinedReward(null), 4000);
+    } else if (totalConflicts > 0) {
+      setBodhiPoints(prev => Math.max(0, prev - 15));
+      setMinedReward('-15 Points (Conflict Penalty)');
+      setTimeout(() => setMinedReward(null), 4000);
+    }
+  };
+
+  // Effect Trigger: Tính lại Sự Thật ngay khi Danh sách Bằng chứng P2P thay đổi
+  useEffect(() => {
+    if (evidenceList.length > 0) {
+      calculateTruthScore(evidenceList);
+    }
+  }, [evidenceList]);
+
+  // Hành động đóng góp Bằng chứng lên Mạng Lưới
+  const submitEvidence = () => {
+    if (!p2pData || !p2pData.path) return;
+    setIsLoading(true);
+
+    const newEvidence = {
+      id: anonymousId,
+      type: ['photo', 'video', 'text'][Math.floor(Math.random() * 3)],
+      node_trust: Math.min(bodhiPoints / 100, 1.0), // Trust lấy sinh ra từ ví Bodhi
+      hashed_region: `Zone_${Math.floor(Math.random() * 999)} (5km²)`, // Zero-Knowledge Location
+      has_conflict: Math.random() > 0.85 // 15% xác suất tạo bằng chứng nhiễu/conflict
+    };
+
+    // Đẩy Bằng Chứng trực tiếp vào Lõi Mạng P2P Gun.js
+    gun.get('truth_layer').get(p2pData.path).get('evidence').set(newEvidence, (ack) => {
+      setIsLoading(false);
+    });
   };
 
   const handleGo = () => {
@@ -225,29 +239,38 @@ export default function App() {
     setP2pContent(null);
     setP2pData(null);
     setTruthScore(null);
+    setEvidenceList([]); // Reset bằng chứng cũ
 
     // Bắt giao thức Mạng Sự Thật (P2P BTVE) - Zero Infrastructure Cost
     if (query.startsWith('truth://') || query.startsWith('trusking://')) {
       const path = query.replace('truth://', '').replace('trusking://', '');
       const dataPath = path || 'global_truth_feed';
       
-      // Lắng nghe và kéo dữ liệu Sự thật trực tiếp từ Mạng Lưới P2P (Gun.js) thay vì Mock tĩnh
+      // Lắng nghe Content từ Node Khác (Như AI Agent)
       gun.get('truth_layer').get(dataPath).once((data) => {
         if (data && data.content) {
-          // Bắt được tín hiệu từ AI Agent
           setP2pData({
             path: dataPath,
             content: data.content,
             timestamp: data.timestamp || Date.now()
           });
 
-          // Kích hoạt BTVE Engine (Truth Meter) chạy Local trên Máy cá nhân để phân tích Bằng chứng cho Claim này
-          runLocalBTVE(dataPath);
+          // Lắng nghe Bằng Chứng Động MỚI LIÊN TỤC từ Mạng Lưới
+          gun.get('truth_layer').get(dataPath).get('evidence').map().on((evData, evId) => {
+            if (evData && evData.id) {
+               setEvidenceList(prev => {
+                 // Tránh trùng lặp mảng
+                 const exists = prev.find(e => e._id === evId);
+                 if (exists) return prev;
+                 return [...prev, { ...evData, _id: evId }];
+               });
+            }
+          });
+
         } else {
-          // Fallback nếu Mạng chưa đồng bộ kịp hoặc Claim chưa tồn tại
           setP2pData({
             path: dataPath,
-            content: "Lỗi 404: Không tìm thấy Dữ liệu Sự thật trên Mạng lưới P2P DePIN. Vui lòng đợi các Bodhi Node đồng bộ."
+            content: "Lỗi 404: Không tìm thấy Dữ liệu Sự thật trên Mạng lưới. Có thể là 1 Bài Mới. Hãy làm Bodhi Node đầu tiên!"
           });
           setIsLoading(false);
         }
@@ -309,7 +332,7 @@ export default function App() {
       </View>
 
       {/* BTVE TRUTH METER (Lớp 3) */}
-      {(isVerifying || truthScore) && p2pContent && (
+      {(isVerifying || truthScore || p2pData) && p2pContent && (
         <View style={styles.truthMeterContainer}>
           <View style={styles.truthMeterHeader}>
             <Ionicons name="flower-outline" size={18} color="#fff" style={{marginRight: 6}} />
@@ -317,12 +340,12 @@ export default function App() {
           </View>
           
           <View style={styles.truthMeterBody}>
-            {isVerifying ? (
+            {isVerifying && !truthScore ? (
               <View style={styles.verifyingState}>
                 <ActivityIndicator color="#8E24AA" size="small" />
                 <Text style={styles.verifyingText}>Awakening Bodhi Nodes nearby...</Text>
               </View>
-            ) : (
+            ) : truthScore ? (
               <View style={styles.scoreState}>
                 <View style={styles.scoreCircle}>
                   <Text style={[styles.scoreNumber, {color: truthScore.percentage > 70 ? '#4CAF50' : '#FF9800'}]}>
@@ -345,7 +368,18 @@ export default function App() {
                   </Text>
                 </View>
               </View>
+            ) : (
+               <View style={styles.verifyingState}>
+                 <Text style={styles.verifyingText}>Chưa có Nút nào đóng góp Bằng chứng cho Vụ này.</Text>
+               </View>
             )}
+
+            {/* Nút Đóng góp Bằng chứng P2P */}
+            <TouchableOpacity style={styles.submitEvidenceBtn} onPress={submitEvidence}>
+               <Ionicons name="add-circle" size={18} color="#fff" style={{marginRight: 8}}/>
+               <Text style={{color: '#fff', fontWeight:'bold'}}>Contribute Encrypted Evidence</Text>
+            </TouchableOpacity>
+
           </View>
         </View>
       )}
@@ -422,4 +456,10 @@ const styles = StyleSheet.create({
   scoreDetails: { marginLeft: 20, flex: 1 },
   scoreStatus: { fontSize: 17, fontWeight: 'bold', marginBottom: 4 },
   scoreSubtext: { fontSize: 12, color: '#5D4037', marginBottom: 3 },
+
+  submitEvidenceBtn: {
+    backgroundColor: '#D81B60', padding: 12, borderRadius: 8, flexDirection: 'row', 
+    alignItems: 'center', justifyContent: 'center', marginTop: 15,
+    shadowColor: '#D81B60', shadowOpacity: 0.3, shadowOffset: {height: 2, width: 0}, shadowRadius: 5
+  }
 });
