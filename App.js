@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, SafeAreaView, Keyboard, ActivityIndicator, ScrollView, Share, Modal, FlatList, Dimensions, Image } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, SafeAreaView, ActivityIndicator, Keyboard, Dimensions, FlatList, Image, Alert } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useState, useRef, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -282,6 +282,79 @@ export default function App() {
       setBodhiPoints(prev => Math.max(0, prev - 15));
       setMinedReward('-15 Points (Conflict Penalty)');
       setTimeout(() => setMinedReward(null), 4000);
+    }
+  };
+
+  // ============================================
+  // Phase 17: In-Line Web3 Context Highlighting
+  // ============================================
+  const INJECTED_TRUTH_HIGHLIGHTS = `
+    setTimeout(function() {
+      // Mock Data: Bằng chứng P2P gắn liền với từng đoạn text cụ thể
+      var annotations = [
+        { text: 'Đinh Mạnh Cường', type: 'trust', votes: 154, message: 'Nhân vật uy tín tuyệt đối. Founder Trusking.' },
+        { text: 'lừa đảo', type: 'fake', votes: 89, message: 'Từ khóa bị flag. 89 Bodhi Nodes báo cáo đây là tin đồn thất thiệt.' },
+        { text: 'chưa rõ nguyên nhân', type: 'safe', votes: 42, message: 'Chi tiết đang được cộng đồng điều tra.' },
+        { text: 'SotaTek', type: 'trust', votes: 99, message: 'Đối tác chiến lược đáng tin cậy.' }
+      ];
+
+      var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+      var nodes = [];
+      while(walker.nextNode()) {
+         nodes.push(walker.currentNode);
+      }
+
+      nodes.forEach(function(node) {
+        var text = node.nodeValue;
+        if (text && text.trim().length > 0) {
+           var replaced = false;
+           annotations.forEach(function(ann) {
+             if (text.includes(ann.text)) {
+               var color = ann.type === 'trust' ? 'rgba(76, 175, 80, 0.4)' : 
+                           ann.type === 'fake' ? 'rgba(244, 67, 54, 0.4)' : 'rgba(255, 193, 7, 0.4)';
+               var badge = ann.type === 'trust' ? '🛡️ Trust' : 
+                           ann.type === 'fake' ? '🚨 Fake' : '⚠️ Safe';
+               var fontColor = ann.type === 'fake' ? '#D32F2F' : ann.type === 'trust' ? '#2E7D32' : '#F57F17';
+
+               var regex = new RegExp(ann.text, 'g');
+               var spanWrapper = '<span style="background-color: ' + color + '; border-bottom: 2px dashed ' + fontColor + '; padding: 0 4px; border-radius: 4px; cursor: pointer; color: ' + fontColor + '; font-weight: bold;" onclick="window.ReactNativeWebView.postMessage(JSON.stringify({action: \\'annotation_click\\', text: \\'' + ann.text + '\\', type: \\'' + ann.type + '\\', votes: ' + ann.votes + ', message: \\'' + ann.message + '\\'}))">' + ann.text + ' <span style="font-size: 10px; background: #fff; border-radius: 10px; padding: 1px 4px; border: 1px solid #ccc; white-space: nowrap; vertical-align: top;">' + badge + ' ' + ann.votes + '</span></span>';
+               
+               // Chỉ thay thế nếu chưa bị replace để tránh vỡ HTML tags
+               if (!text.includes('ReactNativeWebView')) {
+                  var tempDiv = document.createElement('div');
+                  tempDiv.innerHTML = text.replace(regex, spanWrapper);
+                  while (tempDiv.firstChild) {
+                      node.parentNode.insertBefore(tempDiv.firstChild, node);
+                  }
+                  node.parentNode.removeChild(node);
+                  replaced = true;
+               }
+             }
+           });
+        }
+      });
+    }, 1500); // Đợi web load xong 1.5s mới inject
+    true;
+  `;
+
+  const handleWebViewMessage = (event) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.action === 'annotation_click') {
+        const title = data.type === 'fake' ? '🚨 Cảnh báo Fake News' : 
+                      data.type === 'trust' ? '🛡️ Sự thật đã được kiểm chứng' : '⚠️ Thông tin Trung lập';
+        
+        Alert.alert(
+          title,
+          `Cụm từ: "${data.text}"\n\n💡 Bối cảnh Web3: ${data.message}\n\n⚖️ Lượt Vote P2P: ${data.votes} Bodhi Nodes đã đồng thuận.`,
+          [
+            { text: "Đồng tình (+10 Pts)", onPress: () => setBodhiPoints(p => p + 10) },
+            { text: "Phản đối", style: "cancel" }
+          ]
+        );
+      }
+    } catch (e) {
+      console.log('Error parsing WebView message', e);
     }
   };
 
@@ -694,6 +767,8 @@ export default function App() {
             ref={webViewRef}
             source={{ uri: currentUrl }}
             style={styles.webview}
+            injectedJavaScript={INJECTED_TRUTH_HIGHLIGHTS}
+            onMessage={handleWebViewMessage}
             onNavigationStateChange={(navState) => {
               if (navState.url !== currentUrl && navState.url.startsWith('http')) {
                 setUrlInput(navState.url);
