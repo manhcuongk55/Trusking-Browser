@@ -339,6 +339,7 @@ export default function App() {
        setIsSearchVisible(false);
        setP2pContent(null);
        setCurrentUrl('');
+       setArticleTruthScore(null);
        return;
     }
 
@@ -351,6 +352,7 @@ export default function App() {
     setEvidenceList([]); // Reset bằng chứng cũ
     setCurrentDomain(null);
     setBrandSafetyScore(0);
+    setArticleTruthScore(null);
 
     // Bắt giao thức Mạng Sự Thật (P2P BTVE) - Zero Infrastructure Cost
     if (query.startsWith('truth://') || query.startsWith('trusking://')) {
@@ -432,23 +434,48 @@ export default function App() {
           </View>
           
           <View style={[styles.header, {backgroundColor: isHome ? 'rgba(255,255,255,0.95)' : '#fff'}]}>
+            {/* Nút Back to Trusking Home (Chỉ hiện khi đang xem WebView / Xác minh) */}
+            {!isHome && (
+              <TouchableOpacity onPress={() => {
+                setIsHome(true);
+                setIsSearchVisible(false);
+                setP2pContent(null);
+                setCurrentUrl('');
+                setArticleTruthScore(null);
+              }} style={styles.homeNavBtn}>
+                 <Ionicons name="home" size={24} color="#4A148C" />
+              </TouchableOpacity>
+            )}
+
+            {/* Nút Hủy Tìm kiếm (Chỉ hiện khi ở Home Modal) */}
             {isHome && (
-              <TouchableOpacity onPress={() => setIsSearchVisible(false)} style={{marginRight: 12, justifyContent: 'center'}}>
+              <TouchableOpacity onPress={() => setIsSearchVisible(false)} style={styles.homeNavBtn}>
                  <Ionicons name="close-circle" size={28} color="#9E9E9E" />
               </TouchableOpacity>
             )}
-            <TextInput
-              style={styles.urlInput}
-              value={urlInput}
-              onChangeText={setUrlInput}
-              placeholder="Nhập đường link mạng xã hội hoặc truth://"
-              placeholderTextColor="#9E9E9E"
-              autoCapitalize="none"
-              autoCorrect={false}
-              onSubmitEditing={handleGo}
-              returnKeyType="search"
-              autoFocus={isHome && isSearchVisible}
-            />
+
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.urlInput}
+                value={urlInput}
+                onChangeText={setUrlInput}
+                placeholder="Tìm URL hoặc truth://..."
+                placeholderTextColor="#9E9E9E"
+                autoCapitalize="none"
+                autoCorrect={false}
+                onSubmitEditing={handleGo}
+                returnKeyType="search"
+                autoFocus={isHome && isSearchVisible}
+                clearButtonMode="while-editing"
+              />
+              {/* Nút Clear Text mỏng */}
+              {urlInput.length > 0 && (
+                <TouchableOpacity onPress={() => setUrlInput('')} style={styles.clearInputBtn}>
+                   <Ionicons name="close-circle" size={16} color="#BDBDBD" />
+                </TouchableOpacity>
+              )}
+            </View>
+
             <TouchableOpacity style={styles.goButton} onPress={handleGo}>
               {isLoading ? (
                 <ActivityIndicator color="#8E24AA" />
@@ -814,9 +841,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', shadowColor: '#A1887F', shadowOpacity: 0.08, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 3,
     zIndex: 1, paddingBottom: 16
   },
+  homeNavBtn: { marginRight: 12, justifyContent: 'center' },
+  inputContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#f5f5f5', borderRadius: 24, borderWidth: 1, borderColor: '#eeeeee' },
   urlInput: {
-    flex: 1, height: 48, backgroundColor: '#f5f5f5', borderRadius: 24, paddingHorizontal: 20, fontSize: 15, color: '#212121', borderWidth: 1, borderColor: '#eeeeee', fontWeight: '500'
+    flex: 1, height: 48, paddingHorizontal: 20, fontSize: 15, color: '#212121', fontWeight: '500'
   },
+  clearInputBtn: { padding: 10, marginRight: 4, justifyContent: 'center', alignItems: 'center' },
   goButton: { marginLeft: 14, justifyContent: 'center', alignItems: 'center', width: 44, height: 44, backgroundColor: '#f3e5f5', borderRadius: 22 },
   webview: { flex: 1, backgroundColor: '#faf9f6' },
   
