@@ -298,7 +298,7 @@ export default function App() {
   const handleSummonWitnesses = async () => {
     try {
       const claimUrl = p2pData?.path || currentUrl || 'global_truth_feed';
-      const viralMessage = `🚨 Khẩn cấp: Có sự kiện cần Dân Mạng kiểm chứng tại:\n👉 ${claimUrl}\n\n💰 Cộng đồng Trusking đang trả 500 Bodhi Pts (~50.000đ) cho ai có mặt tại hiện trường để làm chứng Sự Thật. Mở trình duyệt Web3 ngay!\n\nLink Trusking: trusking://${claimUrl}`;
+      const viralMessage = `🚨 SOS KHẨN CẤP: Sinh mạng và sự an toàn là trên hết!\n\n👉 Hiện trường: ${claimUrl}\n\n🆘 Hãy ưu tiên hỗ trợ, giúp đỡ những người bị nạn nếu bạn đang ở gần khu vực này! Sau khi đã đảm bảo an toàn mạng người, cộng đồng Trusking rất cần bạn là Nhân Chứng sống để dập tắt mọi tin giả.\n\n🎁 Mạng lưới sẽ tri ân hành động nghĩa hiệp của bạn với 500 Bodhi Pts (~50.000đ).\n\nTham gia cứu trợ và cập nhật Sự Thật: trusking://${claimUrl}`;
       
       const result = await Share.share({
         message: viralMessage,
