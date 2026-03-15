@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, SafeAreaView, Keyboard, ActivityIndicator, ScrollView, Share } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, SafeAreaView, Keyboard, ActivityIndicator, ScrollView, Share, Modal } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useState, useRef, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,6 +40,10 @@ export default function App() {
   const [bodhiPoints, setBodhiPoints] = useState(50); // Điểm khởi tạo
   const [minedReward, setMinedReward] = useState(null); // Trạng thái show thông báo đào thành công
   
+  // Phase 12: Leaderboard State
+  const [isLeaderboardVisible, setIsLeaderboardVisible] = useState(false);
+  const [leaderboardData, setLeaderboardData] = useState([]);
+
   // Privacy Protection State (Pillar 4)
   const [anonymousId, setAnonymousId] = useState('Generating ID...');
 
@@ -80,6 +84,15 @@ export default function App() {
          { id: '3', path: 'community/accident-q1', title: 'Tai nạn dây chuyền 5 ô tô tại cầu Sài Gòn', score: 90, witnesses: 6 },
       ];
       setHomeFeedList(seedFeed);
+      
+      // 3. Phase 12: Load Leaderboard Mock Data
+      setLeaderboardData([
+         { rank: 1, id: '0xBA9F...2C1', points: 12450 },
+         { rank: 2, id: '0x1F2A...9B3', points: 9800 },
+         { rank: 3, id: '0x7C9D...4E5', points: 8420 },
+         { rank: 4, id: '0x3B8E...1A2', points: 5100 },
+         { rank: 5, id: '0x9D4C...8F7', points: 4200 },
+      ]);
     };
 
     generateIdentity();
@@ -368,14 +381,16 @@ export default function App() {
           <Ionicons name="shield-checkmark" size={16} color="#4A148C" style={{marginRight: 6}} />
           <Text style={styles.walletNodeId}>ANON_ID: {anonymousId}</Text>
         </View>
-        <LinearGradient 
-          colors={['#8E24AA', '#512DA8']} 
-          start={{x: 0, y: 0}} end={{x: 1, y: 1}} 
-          style={styles.walletPointsBox}
-        >
-          <Text style={styles.pointsText}>{bodhiPoints} Bodhi Pts</Text>
-          <Ionicons name="diamond" size={13} color="#FFF" />
-        </LinearGradient>
+        <TouchableOpacity onPress={() => setIsLeaderboardVisible(true)}>
+           <LinearGradient 
+             colors={['#8E24AA', '#512DA8']} 
+             start={{x: 0, y: 0}} end={{x: 1, y: 1}} 
+             style={styles.walletPointsBox}
+           >
+             <Text style={styles.pointsText}>{bodhiPoints} Bodhi Pts</Text>
+             <Ionicons name="trophy" size={14} color="#FFD54F" />
+           </LinearGradient>
+        </TouchableOpacity>
       </View>
       
       {/* Thông báo Đào Coin (Proof-of-Truth) */}
@@ -566,6 +581,41 @@ export default function App() {
           )}
         </View>
       )}
+
+      {/* Phase 12: Gamified Leaderboard Modal */}
+      <Modal visible={isLeaderboardVisible} animationType="slide" transparent={true}>
+         <View style={styles.modalOverlay}>
+            <View style={styles.leaderboardModal}>
+               <View style={styles.leaderboardHeader}>
+                 <Ionicons name="trophy" size={28} color="#FFD54F" />
+                 <Text style={styles.leaderboardTitle}>Top Bodhi Nodes</Text>
+                 <TouchableOpacity onPress={() => setIsLeaderboardVisible(false)} style={styles.closeModalBtn}>
+                    <Ionicons name="close" size={24} color="#fff" />
+                 </TouchableOpacity>
+               </View>
+               <ScrollView style={styles.leaderboardList}>
+                  {/* Dòng xếp hạng của riêng người dùng */}
+                  <View style={[styles.leaderboardRow, {backgroundColor: '#F3E5F5', borderColor: '#CE93D8', borderWidth: 1}]}>
+                     <View style={styles.rankBadge}><Text style={styles.rankText}>?</Text></View>
+                     <Text style={[styles.participantId, {color: '#4A148C'}]}>You (0x{anonymousId.substring(2)})</Text>
+                     <Text style={[styles.participantPoints, {color: '#8E24AA'}]}>{bodhiPoints} Pts</Text>
+                  </View>
+                  <View style={{height: 1, backgroundColor: '#eee', marginVertical: 8}} />
+                  
+                  {leaderboardData.map((node, index) => (
+                     <View key={index} style={styles.leaderboardRow}>
+                        <View style={[styles.rankBadge, index === 0 ? {backgroundColor: '#FFD54F'} : index === 1 ? {backgroundColor: '#E0E0E0'} : index === 2 ? {backgroundColor: '#FFB300'} : {}]}>
+                           <Text style={[styles.rankText, index < 3 ? {color: '#fff'} : {}]}>{node.rank}</Text>
+                        </View>
+                        <Text style={styles.participantId}>{node.id}</Text>
+                        <Text style={styles.participantPoints}>{node.points} Pts</Text>
+                     </View>
+                  ))}
+               </ScrollView>
+            </View>
+         </View>
+      </Modal>
+
       <StatusBar style="dark" />
     </SafeAreaView>
   );
@@ -678,5 +728,18 @@ const styles = StyleSheet.create({
      shadowColor: '#8E24AA', shadowOpacity: 0.3, shadowOffset: {height: 8, width: 0}, shadowRadius: 16, elevation: 6
   },
   promoTitle: { color: '#fff', fontSize: 14, fontWeight: '800', marginBottom: 4 },
-  promoDesc: { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '500', lineHeight: 18, paddingRight: 20 }
+  promoDesc: { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '500', lineHeight: 18, paddingRight: 20 },
+
+  // Phase 12: Leaderboard Modal Styles
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  leaderboardModal: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '70%', paddingBottom: 40 },
+  leaderboardHeader: { backgroundColor: '#4A148C', padding: 20, borderTopLeftRadius: 24, borderTopRightRadius: 24, flexDirection: 'row', alignItems: 'center' },
+  leaderboardTitle: { fontSize: 20, fontWeight: '900', color: '#fff', marginLeft: 12, flex: 1 },
+  closeModalBtn: { padding: 4 },
+  leaderboardList: { padding: 20 },
+  leaderboardRow: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#fafafa', borderRadius: 12, marginBottom: 8 },
+  rankBadge: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#eeeeee', alignItems: 'center', justifyContent: 'center', marginRight: 16 },
+  rankText: { fontSize: 14, fontWeight: '900', color: '#757575' },
+  participantId: { flex: 1, fontSize: 15, fontWeight: '700', color: '#424242', fontFamily: 'monospace' },
+  participantPoints: { fontSize: 16, fontWeight: '900', color: '#F57C00' }
 });
