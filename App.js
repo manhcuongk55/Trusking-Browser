@@ -55,6 +55,9 @@ export default function App() {
   // Phase 14/15: Immersive Search State
   const [isSearchVisible, setIsSearchVisible] = useState(false);
 
+  // Phase 18: Hyper-Local Bounty Radar State
+  const [isRadarVisible, setIsRadarVisible] = useState(false);
+
   // Privacy Protection State (Pillar 4)
   const [anonymousId, setAnonymousId] = useState('Generating ID...');
 
@@ -560,6 +563,60 @@ export default function App() {
         </View>
       )}
 
+      {/* Phase 18: Hyper-Local Truth Radar Modal */}
+      <Modal visible={isRadarVisible} animationType="fade" transparent={true}>
+         <View style={styles.radarContainer}>
+            <View style={styles.radarHeader}>
+               <Text style={styles.radarTitle}>📍 Radar Sự Thật (Bán kính 2km)</Text>
+               <TouchableOpacity onPress={() => setIsRadarVisible(false)}>
+                  <Ionicons name="close" size={32} color="#fff" />
+               </TouchableOpacity>
+            </View>
+
+            {/* Radar UI Simulation */}
+            <View style={styles.radarMap}>
+               <View style={styles.radarCircle1} />
+               <View style={styles.radarCircle2} />
+               <View style={styles.radarCircle3} />
+               
+               {/* Center Node (User) */}
+               <View style={styles.radarCenterNode}>
+                  <View style={styles.radarPulse} />
+                  <Ionicons name="navigate" size={20} color="#fff" />
+               </View>
+
+               {/* Mock Bounties (Nhiệm vụ địa phương) */}
+               <TouchableOpacity style={[styles.bountyPin, {top: '30%', left: '20%'}]} onPress={() => {
+                  Alert.alert("Nhiệm vụ Khẩn cấp", "Phát hiện cháy ở Cầu Giấy. Chụp 1 bức ảnh xác thực ngay để nhận 500 Bodhi Pts ($5).", [
+                     {text: "Đi lấy tin ngay", onPress: () => Alert.alert("Mở Camera", "Đang kết nối ống kính chống giả mạo... (Mock)")},
+                     {text: "Hủy", style: 'cancel'}
+                  ]);
+               }}>
+                  <View style={styles.bountyMarker}><Text style={{fontSize: 20}}>🔥</Text></View>
+                  <View style={styles.bountyTooltip}><Text style={styles.bountyReward}>+500 Pts</Text></View>
+               </TouchableOpacity>
+
+               <TouchableOpacity style={[styles.bountyPin, {top: '60%', left: '70%'}]} onPress={() => {
+                  Alert.alert("Xác minh thông tin", "Tin đồn tắc đường nghiêm trọng tại Láng. Cần 2 nhân chứng độc lập.", [
+                     {text: "Báo cáo tại hiện trường"}, {text: "Hủy"}
+                  ]);
+               }}>
+                  <View style={styles.bountyMarker}><Text style={{fontSize: 20}}>🚗</Text></View>
+                  <View style={styles.bountyTooltip}><Text style={styles.bountyReward}>+50 Pts</Text></View>
+               </TouchableOpacity>
+               
+               <TouchableOpacity style={[styles.bountyPin, {top: '80%', left: '35%'}]}>
+                  <View style={styles.bountyMarker}><Text style={{fontSize: 20}}>🚨</Text></View>
+                  <View style={styles.bountyTooltip}><Text style={styles.bountyReward}>+200 Pts</Text></View>
+               </TouchableOpacity>
+            </View>
+            
+            <View style={styles.radarFooter}>
+               <Text style={styles.radarFooterTxt}>Cộng đồng sẵn sàng mua Dữ Liệu Sự Thật của bạn.</Text>
+            </View>
+         </View>
+      </Modal>
+
       {/* Thông báo Đào Coin (Proof-of-Truth) */}
       {(isVerifying || truthScore || p2pData) && p2pContent && (
         <View style={styles.truthMeterContainer}>
@@ -713,6 +770,12 @@ export default function App() {
                        <Ionicons name="people" size={14} color="#BDBDBD" style={{marginRight: 6}} />
                        <Text style={styles.tiktokWitnessText}>{item.witnesses} Bodhi Nodes đã chứng kiến</Text>
                     </View>
+                    
+                    {/* Nút Kích hoạt Radar Địa Phương */}
+                    <TouchableOpacity style={styles.radarTriggerBtn} onPress={() => setIsRadarVisible(true)}>
+                       <Ionicons name="radar-outline" size={16} color="#fff" />
+                       <Text style={styles.radarTriggerTxt}>Radar Nhiệm Vụ Gần Đây</Text>
+                    </TouchableOpacity>
                  </View>
 
                  {/* Right Sidebar Actions */}
@@ -1020,6 +1083,25 @@ const styles = StyleSheet.create({
   tiktokScoreCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.6)', borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   tiktokScoreText: { fontSize: 15, fontWeight: '900' },
   tiktokIconCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
+
+  // Phase 18: Hyper-Local Radar Styles
+  radarTriggerBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(76, 175, 80, 0.4)', alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, marginTop: 16, borderWidth: 1, borderColor: '#4CAF50' },
+  radarTriggerTxt: { color: '#fff', fontSize: 13, fontWeight: '800', marginLeft: 6 },
+  radarContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', paddingTop: 50 },
+  radarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 20 },
+  radarTitle: { color: '#4CAF50', fontSize: 18, fontWeight: '900', letterSpacing: 0.5 },
+  radarMap: { flex: 1, alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' },
+  radarCircle1: { position: 'absolute', width: 100, height: 100, borderRadius: 50, borderWidth: 1, borderColor: 'rgba(76,175,80,0.8)' },
+  radarCircle2: { position: 'absolute', width: 220, height: 220, borderRadius: 110, borderWidth: 1, borderColor: 'rgba(76,175,80,0.4)', borderStyle: 'dashed' },
+  radarCircle3: { position: 'absolute', width: 360, height: 360, borderRadius: 180, borderWidth: 1, borderColor: 'rgba(76,175,80,0.1)' },
+  radarCenterNode: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#4A148C', alignItems: 'center', justifyContent: 'center', shadowColor: '#9C27B0', shadowOpacity: 1, shadowRadius: 10 },
+  radarPulse: { position: 'absolute', width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(156,39,176,0.3)' },
+  bountyPin: { position: 'absolute', alignItems: 'center' },
+  bountyMarker: { backgroundColor: '#fff', borderRadius: 20, padding: 6, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 6 },
+  bountyTooltip: { backgroundColor: '#FF9800', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10, marginTop: 4 },
+  bountyReward: { color: '#fff', fontSize: 10, fontWeight: '900' },
+  radarFooter: { padding: 30, alignItems: 'center' },
+  radarFooterTxt: { color: '#BDBDBD', fontSize: 13, fontWeight: '500' },
 
   // Phase 12: Leaderboard Modal Styles
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
