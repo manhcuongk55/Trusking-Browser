@@ -58,6 +58,10 @@ export default function App() {
   // Phase 18: Hyper-Local Bounty Radar State
   const [isRadarVisible, setIsRadarVisible] = useState(false);
 
+  // Phase 19: Truth Broadcasting State
+  const [isBrcstVisible, setIsBrcstVisible] = useState(false);
+  const [broadcastText, setBroadcastText] = useState('');
+
   // Privacy Protection State (Pillar 4)
   const [anonymousId, setAnonymousId] = useState('Generating ID...');
 
@@ -289,6 +293,30 @@ export default function App() {
   };
 
   // ============================================
+  // Phase 19: One-Tap Truth Broadcasting 
+  // ============================================
+  const handlePublishTruth = () => {
+    if (!broadcastText.trim()) return;
+
+    const claimId = 'truth://p2p/local_' + Date.now();
+    
+    // Đẩy Dữ liệu thô lên Mạng P2P. Con AI Agent (Phase 8) đang lắng nghe 'truth_layer' sẽ ngay lập tức "ngửi" thấy và phân tích.
+    gun.get('truth_layer').get(claimId).put({
+      content: broadcastText,
+      author: anonymousId,
+      timestamp: Date.now()
+    }, (ack) => {
+      console.log("Broadcast ACK:", ack);
+      setIsBrcstVisible(false);
+      setBroadcastText('');
+      
+      // Chuyển hướng ngay lập tức sang màn hình Xác minh Sự thật cho Claim này.
+      // Người dùng sẽ thấy AI bốc claim này lên và chấm điểm theo thời gian thực!
+      handleGo(claimId);
+    });
+  }
+
+  // ============================================
   // Phase 17: In-Line Web3 Context Highlighting
   // ============================================
   const INJECTED_TRUTH_HIGHLIGHTS = `
@@ -407,10 +435,11 @@ export default function App() {
     setTimeout(() => setMinedReward(null), 3000);
   };
 
-  const handleGo = () => {
+  const handleGo = (forcedPath) => {
     Keyboard.dismiss();
-    let query = urlInput.trim();
-    if (!query || query === 'truth://home') {
+    const targetPath = forcedPath || urlInput;
+    
+    if (!targetPath || targetPath === 'truth://home') {
        setIsHome(true);
        setIsSearchVisible(false);
        setP2pContent(null);
@@ -431,46 +460,100 @@ export default function App() {
     setArticleTruthScore(null);
 
     // Bắt giao thức Mạng Sự Thật (P2P BTVE) - Zero Infrastructure Cost
-    if (query.startsWith('truth://') || query.startsWith('trusking://')) {
-      const path = query.replace('truth://', '').replace('trusking://', '');
-      const dataPath = path || 'global_truth_feed';
+    if (targetPath.startsWith('truth://') || targetPath.startsWith('trusking://')) {
+      setIsVerifying(true);
       
-      // Lắng nghe Content từ Node Khác (Như AI Agent)
-      gun.get('truth_layer').get(dataPath).once((data) => {
-        if (data && data.content) {
+      const dataPath = targetPath.replace('truth://', '').replace('trusking://', '');
+      
+      // Mock Data 1: Đinh Mạnh Cường - Founder Trusking
+      if (dataPath === 'news/dinh-manh-cuong') {
+        setTimeout(() => {
           setP2pData({
             path: dataPath,
-            content: data.content,
-            timestamp: data.timestamp || Date.now()
+            content: `<h1>Đinh Mạnh Cường: Người Kiến Tạo Trusking</h1><p>Đinh Mạnh Cường là một doanh nhân công nghệ có tầm nhìn, được biết đến là người sáng lập và kiến tạo nên nền tảng Trusking. Với hơn 15 năm kinh nghiệm trong lĩnh vực blockchain và AI, anh Cường đã dẫn dắt đội ngũ phát triển Trusking với sứ mệnh xây dựng một mạng lưới xác thực thông tin phi tập trung, minh bạch và đáng tin cậy.</p><p>Anh Cường tốt nghiệp Đại học Bách Khoa Hà Nội và có bằng Thạc sĩ về Khoa học Máy tính tại Stanford. Trước khi thành lập Trusking, anh từng giữ các vị trí chủ chốt tại Google và Facebook, nơi anh đóng góp vào các dự án AI và hệ thống phân tán quy mô lớn.</p><p>Dưới sự lãnh đạo của anh, Trusking đã thu hút hàng triệu người dùng và trở thành một trong những dự án Web3 tiên phong trong việc chống lại tin giả và bảo vệ sự thật trên không gian mạng.</p>`,
+            author: 'Trusking Editorial',
+            timestamp: Date.now() - 3600000 // 1 hour ago
           });
-
-          // Lắng nghe Bằng Chứng Động MỚI LIÊN TỤC từ Mạng Lưới
-          gun.get('truth_layer').get(dataPath).get('evidence').map().on((evData, evId) => {
-            if (evData && evData.id) {
-               setEvidenceList(prev => {
-                 // Tránh trùng lặp mảng
-                 const exists = prev.find(e => e._id === evId);
-                 if (exists) return prev;
-                 return [...prev, { ...evData, _id: evId }];
-               });
+          setEvidenceList([
+            { _id: 'ev1', id: '0xabc', type: 'text', node_trust: 0.9, hashed_region: 'Global', has_conflict: false },
+            { _id: 'ev2', id: '0xdef', type: 'photo', node_trust: 0.8, hashed_region: 'Global', has_conflict: false },
+            { _id: 'ev3', id: '0xghi', type: 'video', node_trust: 0.95, hashed_region: 'Global', has_conflict: false },
+            { _id: 'ev4', id: '0xjkl', type: 'text', node_trust: 0.7, hashed_region: 'Global', has_conflict: false },
+          ]);
+          setIsLoading(false);
+          // setIsVerifying(false); // Keep verifying until calculateTruthScore runs
+        }, 1000);
+      }
+      // Xử lý Dynamic Local Claims (Phase 19 báo cáo sự thật)
+      else if (dataPath.startsWith('p2p/local_')) {
+        setTimeout(() => {
+          gun.get('truth_layer').get('truth://' + dataPath).once((data) => {
+            if (data && data.content) {
+              setP2pData({
+                path: 'truth://' + dataPath,
+                content: data.content,
+                author: data.author || 'Anonymous Node',
+                timestamp: data.timestamp
+              });
+              
+              // Cập nhật Danh sách bằng chứng
+              const evData = [];
+              gun.get('truth_layer').get('truth://' + dataPath).get('evidence').map().once((ev, id) => {
+                 if (ev) evData.push(ev);
+                 setEvidenceList([...evData]);
+              });
+              
+            } else {
+              setP2pData({
+                path: dataPath,
+                content: "Lỗi 404: Không tìm thấy Dữ liệu Sự thật trên Mạng lưới. Có thể là 1 Bài Mới. Hãy làm Bodhi Node đầu tiên!"
+              });
             }
           });
-
-        } else {
-          setP2pData({
-            path: dataPath,
-            content: "Lỗi 404: Không tìm thấy Dữ liệu Sự thật trên Mạng lưới. Có thể là 1 Bài Mới. Hãy làm Bodhi Node đầu tiên!"
-          });
           setIsLoading(false);
-        }
-      });
+          // setIsVerifying(false); // Keep verifying until calculateTruthScore runs
+        }, 1500);
+      }
+      else {
+        // Lắng nghe Content từ Node Khác (Như AI Agent)
+        gun.get('truth_layer').get(dataPath).once((data) => {
+          if (data && data.content) {
+            setP2pData({
+              path: dataPath,
+              content: data.content,
+              timestamp: data.timestamp || Date.now()
+            });
 
+            // Lắng nghe Bằng Chứng Động MỚI LIÊN TỤC từ Mạng Lưới
+            gun.get('truth_layer').get(dataPath).get('evidence').map().on((evData, evId) => {
+              if (evData && evData.id) {
+                 setEvidenceList(prev => {
+                   // Tránh trùng lặp mảng
+                   const exists = prev.find(e => e._id === evId);
+                   if (exists) return prev;
+                   return [...prev, { ...evData, _id: evId }];
+                 });
+              }
+            });
+
+          } else {
+            setP2pData({
+              path: dataPath,
+              content: "Lỗi 404: Không tìm thấy Dữ liệu Sự thật trên Mạng lưới. Có thể là 1 Bài Mới. Hãy làm Bodhi Node đầu tiên!"
+            });
+          }
+          setIsLoading(false);
+          // setIsVerifying(false); // Keep verifying until calculateTruthScore runs
+        });
+      }
       return;
     }
 
     // 3. Fallback web bình thường 
-    if (!query.startsWith('http')) {
-      query = `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
+    if (!targetPath.startsWith('http')) {
+      query = `https://duckduckgo.com/?q=${encodeURIComponent(targetPath)}`;
+    } else {
+      query = targetPath;
     }
     
     // Phase 10: Tính toán Safety Score cho Domain
@@ -539,7 +622,7 @@ export default function App() {
                 placeholderTextColor="#9E9E9E"
                 autoCapitalize="none"
                 autoCorrect={false}
-                onSubmitEditing={handleGo}
+                onSubmitEditing={() => handleGo()}
                 returnKeyType="search"
                 autoFocus={isHome && isSearchVisible}
                 clearButtonMode="while-editing"
@@ -552,7 +635,7 @@ export default function App() {
               )}
             </View>
 
-            <TouchableOpacity style={styles.goButton} onPress={handleGo}>
+            <TouchableOpacity style={styles.goButton} onPress={() => handleGo()}>
               {isLoading ? (
                 <ActivityIndicator color="#8E24AA" />
               ) : (
@@ -562,6 +645,57 @@ export default function App() {
           </View>
         </View>
       )}
+
+      {/* Phase 19: Floating Action Button (Đăng Tin) */}
+      {isHome && !isRadarVisible && !isSearchVisible && !isBrcstVisible && (
+         <TouchableOpacity style={styles.broadcastFab} onPress={() => setIsBrcstVisible(true)}>
+            <LinearGradient colors={['#9C27B0', '#4A148C']} style={styles.fabGradient}>
+               <Ionicons name="add" size={32} color="#fff" />
+            </LinearGradient>
+         </TouchableOpacity>
+      )}
+
+      {/* Phase 19: Truth Broadcasting Modal */}
+      <Modal visible={isBrcstVisible} animationType="slide" transparent={true}>
+         <View style={styles.brcstContainer}>
+            <View style={styles.brcstHeader}>
+               <Text style={styles.brcstTitle}>🎙️ Phát Sóng Sự Thật</Text>
+               <TouchableOpacity onPress={() => setIsBrcstVisible(false)}>
+                  <Ionicons name="close" size={32} color="#fff" />
+               </TouchableOpacity>
+            </View>
+
+            <View style={styles.brcstContent}>
+               <Text style={styles.brcstSubtitle}>Bạn đang chứng kiến điều gì?</Text>
+               <TextInput
+                  style={styles.brcstInput}
+                  placeholder="Ví dụ: Có đám cháy lớn tại ngã tư Cầu Giấy..."
+                  placeholderTextColor="#757575"
+                  multiline={true}
+                  autoFocus={true}
+                  value={broadcastText}
+                  onChangeText={setBroadcastText}
+               />
+               
+               <View style={styles.brcstProofTools}>
+                  <TouchableOpacity style={styles.proofToolBtn}>
+                     <Ionicons name="camera" size={24} color="#4CAF50" />
+                     <Text style={styles.proofToolTxt}>Ảnh GPS</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.proofToolBtn}>
+                     <Ionicons name="videocam" size={24} color="#2196F3" />
+                     <Text style={styles.proofToolTxt}>Video 15s</Text>
+                  </TouchableOpacity>
+               </View>
+
+               <TouchableOpacity style={styles.publishBtn} onPress={handlePublishTruth}>
+                  <LinearGradient colors={['#4CAF50', '#2E7D32']} style={styles.publishGradient}>
+                     <Text style={styles.publishBtnTxt}>🚀 Đẩy lên Mạng P2P</Text>
+                  </LinearGradient>
+               </TouchableOpacity>
+            </View>
+         </View>
+      </Modal>
 
       {/* Phase 18: Hyper-Local Truth Radar Modal */}
       <Modal visible={isRadarVisible} animationType="fade" transparent={true}>
@@ -1102,6 +1236,22 @@ const styles = StyleSheet.create({
   bountyReward: { color: '#fff', fontSize: 10, fontWeight: '900' },
   radarFooter: { padding: 30, alignItems: 'center' },
   radarFooterTxt: { color: '#BDBDBD', fontSize: 13, fontWeight: '500' },
+
+  // Phase 19: Broadcasting Styles
+  broadcastFab: { position: 'absolute', bottom: 30, right: 20, width: 60, height: 60, borderRadius: 30, shadowColor: '#9C27B0', shadowOpacity: 0.8, shadowRadius: 10, elevation: 10, zIndex: 100 },
+  fabGradient: { flex: 1, borderRadius: 30, alignItems: 'center', justifyContent: 'center' },
+  brcstContainer: { flex: 1, backgroundColor: '#121212', justifyContent: 'flex-start', paddingTop: 60 },
+  brcstHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 30 },
+  brcstTitle: { color: '#fff', fontSize: 22, fontWeight: '900' },
+  brcstContent: { paddingHorizontal: 20 },
+  brcstSubtitle: { color: '#BDBDBD', fontSize: 16, marginBottom: 16 },
+  brcstInput: { backgroundColor: '#1E1E1E', borderRadius: 16, padding: 20, color: '#fff', fontSize: 18, minHeight: 150, textAlignVertical: 'top', borderWidth: 1, borderColor: '#333' },
+  brcstProofTools: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 24, marginBottom: 40 },
+  proofToolBtn: { alignItems: 'center', backgroundColor: '#2C2C2C', paddingVertical: 16, paddingHorizontal: 30, borderRadius: 16, minWidth: '45%' },
+  proofToolTxt: { color: '#fff', marginTop: 8, fontWeight: '600' },
+  publishBtn: { borderRadius: 16, overflow: 'hidden' },
+  publishGradient: { paddingVertical: 18, alignItems: 'center' },
+  publishBtnTxt: { color: '#fff', fontSize: 18, fontWeight: '900', letterSpacing: 1 },
 
   // Phase 12: Leaderboard Modal Styles
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
