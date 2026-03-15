@@ -83,11 +83,12 @@ export default function App() {
       }
 
       // 2. Load Trending P2P Feed (Seed Mock Data into Gun for Demo)
+      // Phase 15: Added Psychological "Hooks" to trigger curiosity immediately upon opening
       const seedFeed = [
-         { id: '1', path: 'news/fire-vincom', title: 'Khói mù mịt tại ngã tư Vincom Bà Triệu', score: 45, witnesses: 1, image: 'https://images.unsplash.com/photo-1602166542714-b52baee0f323?q=80&w=800&auto=format&fit=crop', author: '0x1A2B' },
-         { id: '2', path: 'news/fake-rice', title: 'Phát hiện gạo giả tại Cửa hàng X ngõ 15', score: 20, witnesses: 0, image: 'https://images.unsplash.com/photo-1586201375761-83865001e8ac?q=80&w=800&auto=format&fit=crop', author: '0x9C4F' },
-         { id: '3', path: 'community/accident-q1', title: 'Tai nạn dây chuyền 5 ô tô tại cầu Sài Gòn', score: 90, witnesses: 6, image: 'https://images.unsplash.com/photo-1544627233-afc2db1e2ea3?q=80&w=800&auto=format&fit=crop', author: '0xDE10' },
-         { id: '4', path: 'news/flood-hanoi', title: 'Ngập sâu 1m tại phố Thái Hà sau mưa lớn', score: 75, witnesses: 3, image: 'https://images.unsplash.com/photo-1547683905-f686c993aae5?q=80&w=800&auto=format&fit=crop', author: '0x7B2E' }
+         { id: '1', path: 'news/fire-vincom', title: 'Video: Cháy lớn tại Vincom Bà Triệu, lộ cảnh kẹt xe cứu hỏa?', score: 45, witnesses: 1, image: 'https://images.unsplash.com/photo-1602166542714-b52baee0f323?q=80&w=800&auto=format&fit=crop', author: '0x1A2B', hook: '⚠️ Đang lây lan với tốc độ 5,000 views/phút. Cần xác thực khẩn cấp!' },
+         { id: '2', path: 'news/fake-rice', title: 'Phát hiện gạo giả bằng cao su tại Cửa hàng X ngõ 15', score: 20, witnesses: 0, image: 'https://images.unsplash.com/photo-1586201375761-83865001e8ac?q=80&w=800&auto=format&fit=crop', author: '0x9C4F', hook: '🛑 85% rủi ro đây là Video Deepfake cắt ghép.' },
+         { id: '3', path: 'community/accident-q1', title: 'Tai nạn dây chuyền 5 ô tô tại cầu Sài Gòn', score: 90, witnesses: 6, image: 'https://images.unsplash.com/photo-1544627233-afc2db1e2ea3?q=80&w=800&auto=format&fit=crop', author: '0xDE10', hook: '✅ Mạng lưới P2P đã giải mã thành công vụ việc này.' },
+         { id: '4', path: 'news/flood-hanoi', title: 'Ngập sâu 1m tại phố Thái Hà sau cơn mưa', score: 75, witnesses: 3, image: 'https://images.unsplash.com/photo-1547683905-f686c993aae5?q=80&w=800&auto=format&fit=crop', author: '0x7B2E', hook: '👁️ Dữ liệu đang tranh cãi. Bạn có đang ở gần đây không?' }
       ];
       setHomeFeedList(seedFeed);
       
@@ -563,6 +564,25 @@ export default function App() {
                     <Text style={{color: '#fff', fontSize: 11, fontWeight: '800'}}>1.2 km away</Text>
                  </View>
 
+                 {/* Center Curiosity Hook: Ám ảnh tâm lý người dùng ngay khi mở app */}
+                 <View style={styles.tiktokCenterHook}>
+                    <Text style={[styles.hookTextWarning, {color: item.score > 70 ? '#4CAF50' : (item.score > 40 ? '#FFEB3B' : '#FF5252')}]}>
+                       {item.hook}
+                    </Text>
+                    <TouchableOpacity 
+                       style={styles.hookButtonWrapper}
+                       onPress={() => {
+                          setUrlInput(`truth://${item.path}`);
+                          setTimeout(handleGo, 100);
+                       }}
+                    >
+                       <LinearGradient colors={['#D81B60', '#4A148C']} start={{x: 0, y: 0}} end={{x: 1, y: 1}} style={styles.hookButtonGradient}>
+                          <Ionicons name="scan-outline" size={26} color="#fff" style={{marginRight: 10}} />
+                          <Text style={styles.hookButtonText}>KHÁM PHÁ SỰ THẬT</Text>
+                       </LinearGradient>
+                    </TouchableOpacity>
+                 </View>
+
                  {/* Bottom Info Area */}
                  <View style={styles.tiktokInfoArea}>
                     <Text style={styles.tiktokAuthor}>@{item.author} (Anon)</Text>
@@ -784,8 +804,16 @@ const styles = StyleSheet.create({
   vouchBtn: { backgroundColor: '#E8F5E9', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: '#C8E6C9' },
   vouchBtnText: { color: '#2E7D32', fontWeight: '800', fontSize: 11 },
   
-  // Phase 14: TikTok-Style Home Feed Styles
+  // Phase 14: TikTok-Style Home Feed Styles & Curiosity Hook
   tiktokTopTag: { position: 'absolute', top: 20, left: 16, backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+  
+  // Center Action Hook
+  tiktokCenterHook: { position: 'absolute', top: '40%', left: 0, right: 0, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 },
+  hookTextWarning: { fontSize: 13, fontWeight: '800', textAlign: 'center', marginBottom: 16, textShadowColor: 'rgba(0,0,0,0.9)', textShadowOffset: {width: 0, height: 2}, textShadowRadius: 6, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, overflow: 'hidden'},
+  hookButtonWrapper: { shadowColor: '#D81B60', shadowOpacity: 0.6, shadowOffset: {width: 0, height: 8}, shadowRadius: 24, elevation: 12 },
+  hookButtonGradient: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16, borderRadius: 30, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
+  hookButtonText: { color: '#fff', fontSize: 16, fontWeight: '900', letterSpacing: 1 },
+
   tiktokInfoArea: { position: 'absolute', bottom: 30, left: 16, right: 80 },
   tiktokAuthor: { color: '#fff', fontSize: 13, fontWeight: '700', marginBottom: 8 },
   tiktokTitle: { color: '#fff', fontSize: 18, fontWeight: '800', lineHeight: 26, marginBottom: 12, textShadowColor: 'rgba(0,0,0,0.8)', textShadowOffset: {width: 0, height: 2}, textShadowRadius: 4 },
