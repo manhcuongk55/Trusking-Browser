@@ -19,8 +19,10 @@ const gun = Gun({
 });
 
 export default function App() {
-  const [urlInput, setUrlInput] = useState('truth://makai/news/fire-vincom');
+  const [urlInput, setUrlInput] = useState('');
   const [currentUrl, setCurrentUrl] = useState('');
+  const [isHome, setIsHome] = useState(true); // Phase 11: Màn hình Home mặc định
+  const [homeFeedList, setHomeFeedList] = useState([]); // Chứa danh sách Hot Claims
   const [p2pContent, setP2pContent] = useState(null); 
   const [p2pData, setP2pData] = useState(null); // Lưu trữ metadata để WebView render
   const [isLoading, setIsLoading] = useState(false);
@@ -57,8 +59,31 @@ export default function App() {
     };
     generateIdentity();
 
-    // Initial load
-    handleGo();
+    // Phase 11: Daily Login Bonus & Load Home Feed
+    const loadHomeData = async () => {
+      // 1. Daily Login Bonus check (Mock)
+      const lastLogin = await AsyncStorage.getItem('last_login');
+      const today = new Date().toDateString();
+      if (lastLogin !== today) {
+         setTimeout(() => {
+           setBodhiPoints(prev => prev + 10);
+           setMinedReward('Daily Login: +10 Bodhi Pts 🎁');
+           setTimeout(() => setMinedReward(null), 4000);
+         }, 1500);
+         await AsyncStorage.setItem('last_login', today);
+      }
+
+      // 2. Load Trending P2P Feed (Seed Mock Data into Gun for Demo)
+      const seedFeed = [
+         { id: '1', path: 'news/fire-vincom', title: 'Khói mù mịt tại ngã tư Vincom Bà Triệu', score: 45, witnesses: 1 },
+         { id: '2', path: 'news/fake-rice', title: 'Phát hiện gạo giả tại Cửa hàng X', score: 20, witnesses: 0 },
+         { id: '3', path: 'community/accident-q1', title: 'Tai nạn dây chuyền 5 ô tô tại cầu Sài Gòn', score: 90, witnesses: 6 },
+      ];
+      setHomeFeedList(seedFeed);
+    };
+
+    generateIdentity();
+    loadHomeData();
   }, []);
 
   // Effect: Render lại WebView HTML ngay khi Truth Graph (truthScore) được tính toán xong
@@ -262,8 +287,14 @@ export default function App() {
   const handleGo = () => {
     Keyboard.dismiss();
     let query = urlInput.trim();
-    if (!query) return;
+    if (!query || query === 'truth://home') {
+       setIsHome(true);
+       setP2pContent(null);
+       setCurrentUrl('');
+       return;
+    }
 
+    setIsHome(false);
     setIsLoading(true);
     setP2pContent(null);
     setP2pData(null);
@@ -454,8 +485,46 @@ export default function App() {
         </View>
       )}
 
-      {/* Màn hình Browser */}
-      {p2pContent ? (
+      {/* Phase 11: Discovery Home Feed (Màn hình chính cuốn hút user) */}
+      {isHome ? (
+        <ScrollView style={styles.homeFeedContainer} contentContainerStyle={{paddingBottom: 40}}>
+           <Text style={styles.homeFeedTitle}>Trending Nhờ Xác Minh P2P</Text>
+           <Text style={styles.homeFeedSubtitle}>Cộng đồng đang cần Bodhi Nodes tại các điểm nóng này.</Text>
+           
+           {homeFeedList.map(item => (
+              <TouchableOpacity 
+                 key={item.id} 
+                 style={styles.feedCard}
+                 onPress={() => {
+                    setUrlInput(`truth://${item.path}`);
+                    setTimeout(handleGo, 100);
+                 }}
+              >
+                 <View style={{flex: 1}}>
+                    <Text style={styles.feedCardTitle}>{item.title}</Text>
+                    <View style={styles.feedCardMeta}>
+                       <Ionicons name="people" size={12} color="#757575" style={{marginRight: 4}}/>
+                       <Text style={styles.feedCardWitness}>{item.witnesses} Bodhi Nodes đang xem xét</Text>
+                    </View>
+                 </View>
+                 <View style={styles.feedCardScoreBox}>
+                    <Text style={[styles.feedCardScore, {color: item.score > 70 ? '#2E7D32' : (item.score > 40 ? '#F57C00' : '#D32F2F')}]}>
+                      {item.score}%
+                    </Text>
+                    <Text style={styles.feedCardScoreLabel}>TRUST</Text>
+                 </View>
+              </TouchableOpacity>
+           ))}
+           
+           <View style={styles.promoBanner}>
+              <Ionicons name="diamond" size={24} color="#FFF" />
+              <View style={{marginLeft: 12}}>
+                 <Text style={styles.promoTitle}>Đào Bodhi Points mỗi ngày!</Text>
+                 <Text style={styles.promoDesc}>Trở thành Nút Sự Thật, nộp bằng chứng trực tiếp tại các sự kiện nóng để săn thưởng.</Text>
+              </View>
+           </View>
+        </ScrollView>
+      ) : p2pContent ? (
         <WebView originWhitelist={['*']} source={{ html: p2pContent }} style={styles.webview} />
       ) : (
         <View style={{flex: 1}}>
@@ -585,5 +654,29 @@ const styles = StyleSheet.create({
   brandDomainText: { fontSize: 13, fontWeight: '800', color: '#333' },
   brandSafetyText: { fontSize: 11, color: '#666', marginTop: 2 },
   vouchBtn: { backgroundColor: '#E8F5E9', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: '#C8E6C9' },
-  vouchBtnText: { color: '#2E7D32', fontWeight: '800', fontSize: 11 }
+  vouchBtnText: { color: '#2E7D32', fontWeight: '800', fontSize: 11 },
+  
+  // Phase 11: Home Feed Styles
+  homeFeedContainer: { flex: 1, backgroundColor: '#faf9f6', padding: 16 },
+  homeFeedTitle: { fontSize: 20, fontWeight: '900', color: '#4A148C', marginBottom: 4 },
+  homeFeedSubtitle: { fontSize: 13, color: '#757575', marginBottom: 20, fontWeight: '500' },
+  feedCard: { 
+     backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12, 
+     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+     shadowColor: '#4A148C', shadowOpacity: 0.06, shadowOffset: {width: 0, height: 6}, shadowRadius: 10, elevation: 3,
+     borderWidth: 1, borderColor: '#f0f0f0'
+  },
+  feedCardTitle: { fontSize: 15, fontWeight: '700', color: '#212121', marginBottom: 8, lineHeight: 22 },
+  feedCardMeta: { flexDirection: 'row', alignItems: 'center' },
+  feedCardWitness: { fontSize: 12, color: '#757575', fontWeight: '500' },
+  feedCardScoreBox: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#fafafa', padding: 10, borderRadius: 12, marginLeft: 16, minWidth: 60 },
+  feedCardScore: { fontSize: 15, fontWeight: '900' },
+  feedCardScoreLabel: { fontSize: 9, fontWeight: '800', color: '#9E9E9E', marginTop: 2 },
+  promoBanner: { 
+     marginTop: 20, backgroundColor: '#8E24AA', borderRadius: 16, padding: 20, 
+     flexDirection: 'row', alignItems: 'center',
+     shadowColor: '#8E24AA', shadowOpacity: 0.3, shadowOffset: {height: 8, width: 0}, shadowRadius: 16, elevation: 6
+  },
+  promoTitle: { color: '#fff', fontSize: 14, fontWeight: '800', marginBottom: 4 },
+  promoDesc: { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '500', lineHeight: 18, paddingRight: 20 }
 });
