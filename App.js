@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, SafeAreaView, Keyboard, ActivityIndicator, ScrollView, Share, Modal } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, SafeAreaView, Keyboard, ActivityIndicator, ScrollView, Share, Modal, FlatList, Dimensions, Image } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useState, useRef, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Gun from 'gun';
 import * as Crypto from 'expo-crypto'; // Module Crypto để mã hóa Identity
+
+const { width, height } = Dimensions.get('window');
 
 // 1. Khởi tạo Relay Nội Bộ (Trusking Node)
 import 'gun/lib/radix';
@@ -82,9 +84,10 @@ export default function App() {
 
       // 2. Load Trending P2P Feed (Seed Mock Data into Gun for Demo)
       const seedFeed = [
-         { id: '1', path: 'news/fire-vincom', title: 'Khói mù mịt tại ngã tư Vincom Bà Triệu', score: 45, witnesses: 1 },
-         { id: '2', path: 'news/fake-rice', title: 'Phát hiện gạo giả tại Cửa hàng X', score: 20, witnesses: 0 },
-         { id: '3', path: 'community/accident-q1', title: 'Tai nạn dây chuyền 5 ô tô tại cầu Sài Gòn', score: 90, witnesses: 6 },
+         { id: '1', path: 'news/fire-vincom', title: 'Khói mù mịt tại ngã tư Vincom Bà Triệu', score: 45, witnesses: 1, image: 'https://images.unsplash.com/photo-1602166542714-b52baee0f323?q=80&w=800&auto=format&fit=crop', author: '0x1A2B' },
+         { id: '2', path: 'news/fake-rice', title: 'Phát hiện gạo giả tại Cửa hàng X ngõ 15', score: 20, witnesses: 0, image: 'https://images.unsplash.com/photo-1586201375761-83865001e8ac?q=80&w=800&auto=format&fit=crop', author: '0x9C4F' },
+         { id: '3', path: 'community/accident-q1', title: 'Tai nạn dây chuyền 5 ô tô tại cầu Sài Gòn', score: 90, witnesses: 6, image: 'https://images.unsplash.com/photo-1544627233-afc2db1e2ea3?q=80&w=800&auto=format&fit=crop', author: '0xDE10' },
+         { id: '4', path: 'news/flood-hanoi', title: 'Ngập sâu 1m tại phố Thái Hà sau mưa lớn', score: 75, witnesses: 3, image: 'https://images.unsplash.com/photo-1547683905-f686c993aae5?q=80&w=800&auto=format&fit=crop', author: '0x7B2E' }
       ];
       setHomeFeedList(seedFeed);
       
@@ -536,45 +539,84 @@ export default function App() {
          </View>
       )}
 
-      {/* Phase 11: Discovery Home Feed (Màn hình chính cuốn hút user) */}
+      {/* Phase 14: TikTok-Style Vertical Truth Feed */}
       {isHome ? (
-        <ScrollView style={styles.homeFeedContainer} contentContainerStyle={{paddingBottom: 40}}>
-           <Text style={styles.homeFeedTitle}>Trending Nhờ Xác Minh P2P</Text>
-           <Text style={styles.homeFeedSubtitle}>Cộng đồng đang cần Bodhi Nodes tại các điểm nóng này.</Text>
-           
-           {homeFeedList.map(item => (
-              <TouchableOpacity 
-                 key={item.id} 
-                 style={styles.feedCard}
-                 onPress={() => {
-                    setUrlInput(`truth://${item.path}`);
-                    setTimeout(handleGo, 100);
-                 }}
-              >
-                 <View style={{flex: 1}}>
-                    <Text style={styles.feedCardTitle}>{item.title}</Text>
-                    <View style={styles.feedCardMeta}>
-                       <Ionicons name="people" size={12} color="#757575" style={{marginRight: 4}}/>
-                       <Text style={styles.feedCardWitness}>{item.witnesses} Bodhi Nodes đang xem xét</Text>
+         <View style={{flex: 1, backgroundColor: '#000'}}>
+           <FlatList
+             data={homeFeedList}
+             keyExtractor={(item) => item.id}
+             pagingEnabled
+             showsVerticalScrollIndicator={false}
+             snapToAlignment="start"
+             decelerationRate="fast"
+             renderItem={({ item }) => (
+               <View style={{ width, height: height - 120, backgroundColor: '#111' }}>
+                 {/* Background Media */}
+                 <Image source={{ uri: item.image }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+                 
+                 {/* Dark Gradient Overlay for text readability */}
+                 <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)', 'rgba(0,0,0,0.95)']} style={StyleSheet.absoluteFillObject} />
+
+                 {/* Top Tag */}
+                 <View style={styles.tiktokTopTag}>
+                    <Ionicons name="location" size={12} color="#fff" style={{marginRight: 4}} />
+                    <Text style={{color: '#fff', fontSize: 11, fontWeight: '800'}}>1.2 km away</Text>
+                 </View>
+
+                 {/* Bottom Info Area */}
+                 <View style={styles.tiktokInfoArea}>
+                    <Text style={styles.tiktokAuthor}>@{item.author} (Anon)</Text>
+                    <Text style={styles.tiktokTitle}>{item.title}</Text>
+                    <View style={styles.tiktokMetaRow}>
+                       <Ionicons name="people" size={14} color="#BDBDBD" style={{marginRight: 6}} />
+                       <Text style={styles.tiktokWitnessText}>{item.witnesses} Nhân chứng tại hiện trường</Text>
                     </View>
                  </View>
-                 <View style={styles.feedCardScoreBox}>
-                    <Text style={[styles.feedCardScore, {color: item.score > 70 ? '#2E7D32' : (item.score > 40 ? '#F57C00' : '#D32F2F')}]}>
-                      {item.score}%
-                    </Text>
-                    <Text style={styles.feedCardScoreLabel}>TRUST</Text>
+
+                 {/* Right Sidebar Actions */}
+                 <View style={styles.tiktokSidebar}>
+                    {/* Truth Score Bubble */}
+                    <View style={styles.tiktokActionItem}>
+                       <View style={[styles.tiktokScoreCircle, {borderColor: item.score > 70 ? '#4CAF50' : (item.score > 40 ? '#FF9800' : '#F44336')}]}>
+                          <Text style={[styles.tiktokScoreText, {color: item.score > 70 ? '#4CAF50' : (item.score > 40 ? '#FF9800' : '#F44336')}]}>{item.score}%</Text>
+                       </View>
+                       <Text style={styles.tiktokActionLabel}>Truth</Text>
+                    </View>
+
+                    {/* View Details Action */}
+                    <TouchableOpacity style={styles.tiktokActionItem} onPress={() => {
+                        setUrlInput(`truth://${item.path}`);
+                        setTimeout(handleGo, 100);
+                    }}>
+                       <View style={styles.tiktokIconCircle}>
+                         <Ionicons name="document-text" size={24} color="#fff" />
+                       </View>
+                       <Text style={styles.tiktokActionLabel}>Xác minh</Text>
+                    </TouchableOpacity>
+
+                    {/* Submit Evidence Action */}
+                    <TouchableOpacity style={styles.tiktokActionItem} onPress={() => {
+                        setUrlInput(`truth://${item.path}`);
+                        setTimeout(handleGo, 100);
+                    }}>
+                       <LinearGradient colors={['#D81B60', '#8E24AA']} style={styles.tiktokIconCircle}>
+                         <Ionicons name="camera" size={24} color="#fff" />
+                       </LinearGradient>
+                       <Text style={styles.tiktokActionLabel}>Nộp Phằng chứng</Text>
+                    </TouchableOpacity>
+
+                    {/* Share Action */}
+                    <TouchableOpacity style={styles.tiktokActionItem}>
+                       <View style={styles.tiktokIconCircle}>
+                         <Ionicons name="share-social" size={24} color="#fff" />
+                       </View>
+                       <Text style={styles.tiktokActionLabel}>Chia sẻ</Text>
+                    </TouchableOpacity>
                  </View>
-              </TouchableOpacity>
-           ))}
-           
-           <View style={styles.promoBanner}>
-              <Ionicons name="diamond" size={24} color="#FFF" />
-              <View style={{marginLeft: 12}}>
-                 <Text style={styles.promoTitle}>Đào Bodhi Points mỗi ngày!</Text>
-                 <Text style={styles.promoDesc}>Trở thành Nút Sự Thật, nộp bằng chứng trực tiếp tại các sự kiện nóng để săn thưởng.</Text>
-              </View>
-           </View>
-        </ScrollView>
+               </View>
+             )}
+           />
+         </View>
       ) : p2pContent ? (
         <WebView originWhitelist={['*']} source={{ html: p2pContent }} style={styles.webview} />
       ) : (
@@ -742,29 +784,20 @@ const styles = StyleSheet.create({
   vouchBtn: { backgroundColor: '#E8F5E9', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: '#C8E6C9' },
   vouchBtnText: { color: '#2E7D32', fontWeight: '800', fontSize: 11 },
   
-  // Phase 11: Home Feed Styles
-  homeFeedContainer: { flex: 1, backgroundColor: '#faf9f6', padding: 16 },
-  homeFeedTitle: { fontSize: 20, fontWeight: '900', color: '#4A148C', marginBottom: 4 },
-  homeFeedSubtitle: { fontSize: 13, color: '#757575', marginBottom: 20, fontWeight: '500' },
-  feedCard: { 
-     backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12, 
-     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-     shadowColor: '#4A148C', shadowOpacity: 0.06, shadowOffset: {width: 0, height: 6}, shadowRadius: 10, elevation: 3,
-     borderWidth: 1, borderColor: '#f0f0f0'
-  },
-  feedCardTitle: { fontSize: 15, fontWeight: '700', color: '#212121', marginBottom: 8, lineHeight: 22 },
-  feedCardMeta: { flexDirection: 'row', alignItems: 'center' },
-  feedCardWitness: { fontSize: 12, color: '#757575', fontWeight: '500' },
-  feedCardScoreBox: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#fafafa', padding: 10, borderRadius: 12, marginLeft: 16, minWidth: 60 },
-  feedCardScore: { fontSize: 15, fontWeight: '900' },
-  feedCardScoreLabel: { fontSize: 9, fontWeight: '800', color: '#9E9E9E', marginTop: 2 },
-  promoBanner: { 
-     marginTop: 20, backgroundColor: '#8E24AA', borderRadius: 16, padding: 20, 
-     flexDirection: 'row', alignItems: 'center',
-     shadowColor: '#8E24AA', shadowOpacity: 0.3, shadowOffset: {height: 8, width: 0}, shadowRadius: 16, elevation: 6
-  },
-  promoTitle: { color: '#fff', fontSize: 14, fontWeight: '800', marginBottom: 4 },
-  promoDesc: { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '500', lineHeight: 18, paddingRight: 20 },
+  // Phase 14: TikTok-Style Home Feed Styles
+  tiktokTopTag: { position: 'absolute', top: 20, left: 16, backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+  tiktokInfoArea: { position: 'absolute', bottom: 30, left: 16, right: 80 },
+  tiktokAuthor: { color: '#fff', fontSize: 13, fontWeight: '700', marginBottom: 8 },
+  tiktokTitle: { color: '#fff', fontSize: 18, fontWeight: '800', lineHeight: 26, marginBottom: 12, textShadowColor: 'rgba(0,0,0,0.8)', textShadowOffset: {width: 0, height: 2}, textShadowRadius: 4 },
+  tiktokMetaRow: { flexDirection: 'row', alignItems: 'center' },
+  tiktokWitnessText: { color: '#BDBDBD', fontSize: 12, fontWeight: '600' },
+  
+  tiktokSidebar: { position: 'absolute', bottom: 40, right: 12, alignItems: 'center' },
+  tiktokActionItem: { alignItems: 'center', marginBottom: 24 },
+  tiktokActionLabel: { color: '#fff', fontSize: 10, fontWeight: '700', marginTop: 6, textShadowColor: 'rgba(0,0,0,0.8)', textShadowOffset: {width: 0, height: 1}, textShadowRadius: 2 },
+  tiktokScoreCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.6)', borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  tiktokScoreText: { fontSize: 15, fontWeight: '900' },
+  tiktokIconCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
 
   // Phase 12: Leaderboard Modal Styles
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
