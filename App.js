@@ -293,6 +293,32 @@ export default function App() {
   };
 
   // ============================================
+  // Phase 20: P2P SOS Summoning (Viral Witness Acquisition)
+  // ============================================
+  const handleSummonWitnesses = async () => {
+    try {
+      const claimUrl = p2pData?.path || currentUrl || 'global_truth_feed';
+      const viralMessage = `🚨 Khẩn cấp: Có sự kiện cần Dân Mạng kiểm chứng tại:\n👉 ${claimUrl}\n\n💰 Cộng đồng Trusking đang trả 500 Bodhi Pts (~50.000đ) cho ai có mặt tại hiện trường để làm chứng Sự Thật. Mở trình duyệt Web3 ngay!\n\nLink Trusking: trusking://${claimUrl}`;
+      
+      const result = await Share.share({
+        message: viralMessage,
+        title: 'Trusking - Truy tìm Sự Thật',
+      });
+      
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+           console.log("Shared with activity type: " + result.activityType);
+        } else {
+           console.log("Shared!");
+           setBodhiPoints(p => p + 10); // Thưởng nhẹ cho hành động chia sẻ
+        }
+      }
+    } catch (error) {
+      Alert.alert("Lỗi", "Không thể gọi đồng đội lúc này.");
+    }
+  };
+
+  // ============================================
   // Phase 19: One-Tap Truth Broadcasting 
   // ============================================
   const handlePublishTruth = () => {
