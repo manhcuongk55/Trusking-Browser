@@ -32,6 +32,9 @@ export default function App() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [evidenceList, setEvidenceList] = useState([]); // Chứa bằng chứng real-time từ mạn lưới P2P
 
+  // Phase 13: Proof of Humanity State
+  const [isAuthenticatingHuman, setIsAuthenticatingHuman] = useState(false);
+
   // Brand Domain Safety State (Phase 10)
   const [currentDomain, setCurrentDomain] = useState(null);
   const [brandSafetyScore, setBrandSafetyScore] = useState(0);
@@ -142,6 +145,11 @@ export default function App() {
             
             .pill { background: rgba(142,36,170,0.1); color: #8E24AA; padding: 4px 10px; border-radius: 12px; font-weight: 800; font-size: 10px; letter-spacing: 0.5px; }
             .waiting-lbl { margin-top:30px; text-align:center; color:#9E9E9E; font-size:13px; font-weight: 600; letter-spacing: 0.5px;}
+            
+            /* Phase 13: Data Monetization Label */
+            .data-value-box { background: linear-gradient(135deg, #1B5E20, #4CAF50); border-radius: 12px; padding: 12px 16px; margin-top: 16px; color: white; display:flex; align-items:center; box-shadow: 0 4px 12px rgba(76,175,80,0.3); }
+            .value-title { font-size: 10px; text-transform:uppercase; font-weight: 800; letter-spacing:1px; opacity:0.9;}
+            .value-amount { font-size: 22px; font-weight: 900; letter-spacing:-0.5px; margin-top:2px; }
           </style>
         </head>
         <body>
@@ -165,6 +173,16 @@ export default function App() {
              <div class="formula-box">
                 Σ (Base + Weight×Prox + NodeTrust + Witness) - Conflict<br>
                 <span style="font-weight: 800; font-size: 14px; margin-top: 6px; display: block;">Total Accumulated Score: ${truthScore.percentage}/100</span>
+             </div>
+          </div>
+          
+          <div class="data-value-box">
+             <div style="flex: 1;">
+               <div class="value-title">B2B Premium Data Value (Est.)</div>
+               <div class="value-amount">$${((truthScore.peersAssisted || 0) * 150 + (truthScore.percentage > 70 ? 500 : 0)).toLocaleString()}</div>
+             </div>
+             <div style="font-size:10px; text-align:right; opacity:0.8; font-weight:600; max-width:40%;">
+                100% Real-Human Indexed.<br/>Zero-Knowledge Proofed.
              </div>
           </div>
           ` : '<div class="waiting-lbl">Waiting for DePIN Truth Engine calculation...</div>'}
@@ -264,23 +282,29 @@ export default function App() {
     }
   }, [evidenceList]);
 
-  // Hành động đóng góp Bằng chứng lên Mạng Lưới
+  // Hành động đóng góp Bằng chứng lên Mạng Lưới (Phase 13: Proof of Humanity)
   const submitEvidence = () => {
     if (!p2pData || !p2pData.path) return;
-    setIsLoading(true);
+    setIsAuthenticatingHuman(true); // Pop up FaceID / Proof of Humanity simulation
+    
+    // Simulate 1.5 seconds of "Scanning FaceID / Human Verification"
+    setTimeout(() => {
+        setIsAuthenticatingHuman(false);
+        setIsLoading(true);
 
-    const newEvidence = {
-      id: anonymousId,
-      type: ['photo', 'video', 'text'][Math.floor(Math.random() * 3)],
-      node_trust: Math.min(bodhiPoints / 100, 1.0), // Trust lấy sinh ra từ ví Bodhi
-      hashed_region: `Zone_${Math.floor(Math.random() * 999)} (5km²)`, // Zero-Knowledge Location
-      has_conflict: Math.random() > 0.85 // 15% xác suất tạo bằng chứng nhiễu/conflict
-    };
+        const newEvidence = {
+          id: anonymousId,
+          type: ['photo', 'video', 'text'][Math.floor(Math.random() * 3)],
+          node_trust: Math.min(bodhiPoints / 100, 1.0), // Trust lấy sinh ra từ ví Bodhi
+          hashed_region: `Zone_${Math.floor(Math.random() * 999)} (5km²)`, // Zero-Knowledge Location
+          has_conflict: Math.random() > 0.85 // 15% xác suất tạo bằng chứng nhiễu/conflict
+        };
 
-    // Đẩy Bằng Chứng trực tiếp vào Lõi Mạng P2P Gun.js
-    gun.get('truth_layer').get(p2pData.path).get('evidence').set(newEvidence, (ack) => {
-      setIsLoading(false);
-    });
+        // Đẩy Bằng Chứng trực tiếp vào Lõi Mạng P2P Gun.js
+        gun.get('truth_layer').get(p2pData.path).get('evidence').set(newEvidence, (ack) => {
+          setIsLoading(false);
+        });
+    }, 1500);
   };
 
   // Phase 10: Xác nhận Link Web Thương Hiệu (Vouch for Brand)
@@ -498,6 +522,18 @@ export default function App() {
 
           </View>
         </View>
+      )}
+
+      {/* Phase 13: Proof of Humanity Overlay */}
+      {isAuthenticatingHuman && (
+         <View style={styles.humanityOverlay}>
+           <View style={styles.humanityBox}>
+              <Ionicons name="scan-outline" size={50} color="#4CAF50" />
+              <Text style={styles.humanityTitle}>Proof of Humanity</Text>
+              <Text style={styles.humanityText}>Quét FaceID để chứng minh bạn không phải Bot AI. Block rác giả mạo cày Pts.</Text>
+              <ActivityIndicator color="#4CAF50" style={{marginTop: 16}} />
+           </View>
+         </View>
       )}
 
       {/* Phase 11: Discovery Home Feed (Màn hình chính cuốn hút user) */}
@@ -741,5 +777,11 @@ const styles = StyleSheet.create({
   rankBadge: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#eeeeee', alignItems: 'center', justifyContent: 'center', marginRight: 16 },
   rankText: { fontSize: 14, fontWeight: '900', color: '#757575' },
   participantId: { flex: 1, fontSize: 15, fontWeight: '700', color: '#424242', fontFamily: 'monospace' },
-  participantPoints: { fontSize: 16, fontWeight: '900', color: '#F57C00' }
+  participantPoints: { fontSize: 16, fontWeight: '900', color: '#F57C00' },
+  
+  // Phase 13: Proof of Humanity Styles
+  humanityOverlay: { position: 'absolute', top:0, left:0, right:0, bottom:0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 1000, justifyContent: 'center', alignItems: 'center' },
+  humanityBox: { backgroundColor: '#fff', borderRadius: 24, padding: 30, alignItems: 'center', width: '80%', shadowColor: '#4CAF50', shadowOpacity: 0.3, shadowOffset: {width: 0, height: 10}, shadowRadius: 30, elevation: 12 },
+  humanityTitle: { fontSize: 20, fontWeight: '900', color: '#2E7D32', marginTop: 16 },
+  humanityText: { fontSize: 13, color: '#666', textAlign: 'center', marginTop: 8, lineHeight: 20, fontWeight: '500' }
 });
