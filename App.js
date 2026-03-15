@@ -52,6 +52,9 @@ export default function App() {
   const [isLeaderboardVisible, setIsLeaderboardVisible] = useState(false);
   const [leaderboardData, setLeaderboardData] = useState([]);
 
+  // Phase 14/15: Immersive Search State
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
+
   // Privacy Protection State (Pillar 4)
   const [anonymousId, setAnonymousId] = useState('Generating ID...');
 
@@ -333,12 +336,14 @@ export default function App() {
     let query = urlInput.trim();
     if (!query || query === 'truth://home') {
        setIsHome(true);
+       setIsSearchVisible(false);
        setP2pContent(null);
        setCurrentUrl('');
        return;
     }
 
     setIsHome(false);
+    setIsSearchVisible(false);
     setIsLoading(true);
     setP2pContent(null);
     setP2pData(null);
@@ -405,57 +410,57 @@ export default function App() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* V-ID Trust Economy Wallet Bar */}
-      <View style={styles.walletBar}>
-        <View style={{flexDirection: 'row', alignItems: 'center'}}>
-          <Ionicons name="shield-checkmark" size={16} color="#4A148C" style={{marginRight: 6}} />
-          <Text style={styles.walletNodeId}>ANON_ID: {anonymousId}</Text>
-        </View>
-        <TouchableOpacity onPress={() => setIsLeaderboardVisible(true)}>
-           <LinearGradient 
-             colors={['#8E24AA', '#512DA8']} 
-             start={{x: 0, y: 0}} end={{x: 1, y: 1}} 
-             style={styles.walletPointsBox}
-           >
-             <Text style={styles.pointsText}>{bodhiPoints} Bodhi Pts</Text>
-             <Ionicons name="trophy" size={14} color="#FFD54F" />
-           </LinearGradient>
-        </TouchableOpacity>
-      </View>
-      
-      {/* Thông báo Đào Coin (Proof-of-Truth) */}
-      {minedReward && (
-        <View style={[styles.miningAlert, {backgroundColor: minedReward.includes('+') ? '#E8F5E9' : '#FFEBEE'}]}>
-          <Text style={[styles.miningText, {color: minedReward.includes('+') ? '#2E7D32' : '#C62828'}]}>
-            {minedReward}
-          </Text>
+    <SafeAreaView style={[styles.container, {backgroundColor: isHome ? '#000' : '#faf9f6'}]}>
+      {/* Chỉ hiện Header và Wallet mặc định nếu ĐANG KHÔNG ở trang chủ hoặc MỞ SEARCH */}
+      {(!isHome || isSearchVisible) && (
+        <View style={{zIndex: 10}}>
+          <View style={[styles.walletBar, {backgroundColor: isHome ? 'rgba(255,255,255,0.95)' : '#f3e5f5'}]}>
+            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+              <Ionicons name="shield-checkmark" size={16} color="#4A148C" style={{marginRight: 6}} />
+              <Text style={styles.walletNodeId}>ANON_ID: {anonymousId}</Text>
+            </View>
+            <TouchableOpacity onPress={() => setIsLeaderboardVisible(true)}>
+               <LinearGradient 
+                 colors={['#8E24AA', '#512DA8']} 
+                 start={{x: 0, y: 0}} end={{x: 1, y: 1}} 
+                 style={styles.walletPointsBox}
+               >
+                 <Text style={styles.pointsText}>{bodhiPoints} Bodhi Pts</Text>
+                 <Ionicons name="trophy" size={14} color="#FFD54F" />
+               </LinearGradient>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={[styles.header, {backgroundColor: isHome ? 'rgba(255,255,255,0.95)' : '#fff'}]}>
+            {isHome && (
+              <TouchableOpacity onPress={() => setIsSearchVisible(false)} style={{marginRight: 12, justifyContent: 'center'}}>
+                 <Ionicons name="close-circle" size={28} color="#9E9E9E" />
+              </TouchableOpacity>
+            )}
+            <TextInput
+              style={styles.urlInput}
+              value={urlInput}
+              onChangeText={setUrlInput}
+              placeholder="Nhập đường link mạng xã hội hoặc truth://"
+              placeholderTextColor="#9E9E9E"
+              autoCapitalize="none"
+              autoCorrect={false}
+              onSubmitEditing={handleGo}
+              returnKeyType="search"
+              autoFocus={isHome && isSearchVisible}
+            />
+            <TouchableOpacity style={styles.goButton} onPress={handleGo}>
+              {isLoading ? (
+                <ActivityIndicator color="#8E24AA" />
+              ) : (
+                <Ionicons name="search" size={24} color="#8E24AA" />
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
-      {/* Thanh Bar URL */}
-      <View style={styles.header}>
-        <TextInput
-          style={styles.urlInput}
-          value={urlInput}
-          onChangeText={setUrlInput}
-          placeholder="truth:// path or https://"
-          placeholderTextColor="#BDBDBD"
-          autoCapitalize="none"
-          autoCorrect={false}
-          onSubmitEditing={handleGo}
-          returnKeyType="go"
-        />
-        <TouchableOpacity style={styles.goButton} onPress={handleGo}>
-          {isLoading ? (
-            <ActivityIndicator color="#8E24AA" />
-          ) : (
-            <Ionicons name="search" size={24} color="#8E24AA" />
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* BTVE TRUTH METER (Lớp 3) */}
+      {/* Thông báo Đào Coin (Proof-of-Truth) */}
       {(isVerifying || truthScore || p2pData) && p2pContent && (
         <View style={styles.truthMeterContainer}>
           <LinearGradient colors={['#311B92', '#8E24AA']} start={{x: 0, y: 0}} end={{x: 1, y: 1}} style={styles.truthMeterHeader}>
@@ -546,6 +551,20 @@ export default function App() {
       {/* Phase 14: TikTok-Style Vertical Truth Feed */}
       {isHome ? (
          <View style={{flex: 1, backgroundColor: '#000'}}>
+           {/* Immersive Floating Header for TikTok Feed */}
+           {!isSearchVisible && (
+             <View style={styles.tiktokFloatingHeader}>
+                <TouchableOpacity onPress={() => setIsLeaderboardVisible(true)} style={styles.tiktokWalletBtn}>
+                   <Ionicons name="trophy" size={16} color="#FFD54F" />
+                   <Text style={{color: '#fff', fontSize: 13, fontWeight: '800', marginLeft: 6}}>{bodhiPoints}</Text>
+                </TouchableOpacity>
+                <Text style={styles.tiktokAppLogo}>TRUSKING</Text>
+                <TouchableOpacity onPress={() => setIsSearchVisible(true)} style={styles.tiktokSearchBtn}>
+                   <Ionicons name="search" size={24} color="#fff" />
+                </TouchableOpacity>
+             </View>
+           )}
+
            <FlatList
              data={homeFeedList}
              keyExtractor={(item) => item.id}
@@ -554,17 +573,17 @@ export default function App() {
              snapToAlignment="start"
              decelerationRate="fast"
              renderItem={({ item }) => (
-               <View style={{ width, height: height - 120, backgroundColor: '#111' }}>
+               <View style={{ width, height: height + 50, backgroundColor: '#000' }}>
                  {/* Background Media */}
                  <Image source={{ uri: item.image }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
                  
                  {/* Dark Gradient Overlay for text readability */}
-                 <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)', 'rgba(0,0,0,0.95)']} style={StyleSheet.absoluteFillObject} />
+                 <LinearGradient colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.8)', 'rgba(0,0,0,0.95)', '#000']} locations={[0, 0.2, 0.6, 0.8, 1]} style={StyleSheet.absoluteFillObject} />
 
-                 {/* Top Tag */}
+                 {/* Top Tag - Moved down due to new header */}
                  <View style={styles.tiktokTopTag}>
                     <Ionicons name="location" size={12} color="#fff" style={{marginRight: 4}} />
-                    <Text style={{color: '#fff', fontSize: 11, fontWeight: '800'}}>1.2 km away</Text>
+                    <Text style={{color: '#fff', fontSize: 11, fontWeight: '800'}}>Cộng đồng Vô Danh xác nhận</Text>
                  </View>
 
                  {/* Center Curiosity Hook: Ám ảnh tâm lý người dùng ngay khi mở app */}
@@ -588,11 +607,11 @@ export default function App() {
 
                  {/* Bottom Info Area */}
                  <View style={styles.tiktokInfoArea}>
-                    <Text style={styles.tiktokAuthor}>@{item.author} (Anon)</Text>
+                    <Text style={styles.tiktokAuthor}>@{item.author} (Anon Node)</Text>
                     <Text style={styles.tiktokTitle}>{item.title}</Text>
                     <View style={styles.tiktokMetaRow}>
                        <Ionicons name="people" size={14} color="#BDBDBD" style={{marginRight: 6}} />
-                       <Text style={styles.tiktokWitnessText}>{item.witnesses} Nhân chứng tại hiện trường</Text>
+                       <Text style={styles.tiktokWitnessText}>{item.witnesses} Bodhi Nodes đã chứng kiến</Text>
                     </View>
                  </View>
 
@@ -869,8 +888,13 @@ const styles = StyleSheet.create({
   articleContextBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3E5F5', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 },
   articleContextTxt: { color: '#8E24AA', fontSize: 11, fontWeight: '800' },
   
-  // Phase 14: TikTok-Style Home Feed Styles & Curiosity Hook
-  tiktokTopTag: { position: 'absolute', top: 20, left: 16, backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+  // Phase 14/15: Immersive TikTok-Style Home Feed
+  tiktokFloatingHeader: { position: 'absolute', top: 10, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, zIndex: 100 },
+  tiktokAppLogo: { color: '#fff', fontSize: 18, fontWeight: '900', letterSpacing: 2, textShadowColor: 'rgba(0,0,0,0.8)', textShadowOffset: {width: 0, height: 2}, textShadowRadius: 6 },
+  tiktokWalletBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+  tiktokSearchBtn: { padding: 4, textShadowColor: 'rgba(0,0,0,0.8)', textShadowOffset: {width: 0, height: 2}, textShadowRadius: 6 },
+
+  tiktokTopTag: { position: 'absolute', top: 60, left: 16, backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
   
   // Center Action Hook
   tiktokCenterHook: { position: 'absolute', top: '40%', left: 0, right: 0, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 },
@@ -879,13 +903,13 @@ const styles = StyleSheet.create({
   hookButtonGradient: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16, borderRadius: 30, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
   hookButtonText: { color: '#fff', fontSize: 16, fontWeight: '900', letterSpacing: 1 },
 
-  tiktokInfoArea: { position: 'absolute', bottom: 30, left: 16, right: 80 },
+  tiktokInfoArea: { position: 'absolute', bottom: 100, left: 16, right: 80 },
   tiktokAuthor: { color: '#fff', fontSize: 13, fontWeight: '700', marginBottom: 8 },
   tiktokTitle: { color: '#fff', fontSize: 18, fontWeight: '800', lineHeight: 26, marginBottom: 12, textShadowColor: 'rgba(0,0,0,0.8)', textShadowOffset: {width: 0, height: 2}, textShadowRadius: 4 },
   tiktokMetaRow: { flexDirection: 'row', alignItems: 'center' },
   tiktokWitnessText: { color: '#BDBDBD', fontSize: 12, fontWeight: '600' },
   
-  tiktokSidebar: { position: 'absolute', bottom: 40, right: 12, alignItems: 'center' },
+  tiktokSidebar: { position: 'absolute', bottom: 100, right: 12, alignItems: 'center' },
   tiktokActionItem: { alignItems: 'center', marginBottom: 24 },
   tiktokActionLabel: { color: '#fff', fontSize: 10, fontWeight: '700', marginTop: 6, textShadowColor: 'rgba(0,0,0,0.8)', textShadowOffset: {width: 0, height: 1}, textShadowRadius: 2 },
   tiktokScoreCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.6)', borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
